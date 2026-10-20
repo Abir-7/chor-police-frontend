@@ -1,0 +1,257 @@
+@import "tailwindcss";
+
+/* Shuffle overlay animations (paper slips riffle through the deck) */
+@keyframes shuffle-through-left {
+  0% {
+    transform: translate(130%, -18%) rotate(10deg) scale(0.9);
+    opacity: 0.4;
+  }
+  40% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-130%, 18%) rotate(-10deg) scale(0.9);
+    opacity: 0.4;
+  }
+}
+
+@keyframes shuffle-through-right {
+  0% {
+    transform: translate(-130%, -18%) rotate(-10deg) scale(0.9);
+    opacity: 0.4;
+  }
+  40% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(130%, 18%) rotate(10deg) scale(0.9);
+    opacity: 0.4;
+  }
+}
+
+@keyframes shuffle-bob {
+  0%,
+  100% {
+    transform: rotate(-4deg) translateY(0);
+  }
+  50% {
+    transform: rotate(4deg) translateY(-6px);
+  }
+}
+
+@keyframes shuffle-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.shuffle-anchor {
+  animation: shuffle-bob 0.9s ease-in-out infinite;
+}
+
+.shuffle-left {
+  animation: shuffle-through-left 1.1s ease-in-out infinite;
+}
+
+.shuffle-right {
+  animation: shuffle-through-right 1.1s ease-in-out infinite;
+}
+
+.shuffle-overlay-in {
+  animation: shuffle-overlay-in 0.3s ease-out both;
+}
+
+/* Server wake-up gate: a new role card flips in while the server boots */
+@keyframes gate-role-flip {
+  0% {
+    transform: perspective(600px) rotateY(75deg) scale(0.88);
+    opacity: 0;
+  }
+  55% {
+    transform: perspective(600px) rotateY(-9deg) scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: perspective(600px) rotateY(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.gate-role-flip {
+  animation: gate-role-flip 0.45s ease-out both;
+}
+
+/* Server wake-up gate: message fades in once the wait becomes noticeable */
+@keyframes gate-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.gate-fade-in {
+  animation: gate-fade-in 0.35s ease-out both;
+}
+
+/* Phase announcement overlays (King's pick / Police caught / Police missed) */
+@keyframes announce-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes announce-pop {
+  0% {
+    transform: scale(0.3) rotate(-12deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15) rotate(3deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes announce-siren {
+  0% {
+    background: radial-gradient(circle at center, transparent 55%, rgba(59, 130, 246, 0.28) 100%);
+  }
+  50% {
+    background: radial-gradient(circle at center, transparent 55%, rgba(239, 68, 68, 0.28) 100%);
+  }
+  100% {
+    background: radial-gradient(circle at center, transparent 55%, rgba(59, 130, 246, 0.28) 100%);
+  }
+}
+
+@keyframes announce-siren-flash {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 22px rgba(59, 130, 246, 0.9));
+  }
+  50% {
+    filter: drop-shadow(0 0 22px rgba(248, 113, 113, 0.9));
+  }
+}
+
+@keyframes announce-miss-overlay {
+  0% {
+    background: radial-gradient(circle at center, transparent 60%, rgba(239, 68, 68, 0.22) 100%);
+  }
+  50% {
+    background: radial-gradient(circle at center, transparent 60%, rgba(153, 27, 27, 0.3) 100%);
+  }
+  100% {
+    background: radial-gradient(circle at center, transparent 60%, rgba(239, 68, 68, 0.22) 100%);
+  }
+}
+
+@keyframes announce-escape {
+  0% {
+    transform: translateX(0) rotate(0deg);
+  }
+  100% {
+    transform: translateX(46px) rotate(8deg);
+  }
+}
+
+@keyframes announce-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  50%,
+  90% {
+    transform: translateX(-9px);
+  }
+  30%,
+  70% {
+    transform: translateX(9px);
+  }
+}
+
+.announce-overlay-in {
+  animation: announce-overlay-in 0.25s ease-out both;
+}
+
+.announce-pop {
+  animation: announce-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.announce-delay {
+  animation-delay: 0.35s;
+}
+
+.announce-siren {
+  animation: announce-siren 1s linear infinite;
+}
+
+.announce-siren-flash {
+  animation: announce-siren-flash 0.6s linear infinite;
+}
+
+.announce-miss-overlay {
+  animation: announce-miss-overlay 1.6s linear infinite;
+}
+
+.announce-escape {
+  animation: announce-escape 1.6s ease-in-out infinite alternate;
+}
+
+.announce-escape-late {
+  animation: announce-escape 1.6s 0.25s ease-in-out infinite alternate;
+}
+
+.announce-shake {
+  animation: announce-shake 0.5s 3 ease-in-out;
+}
+
+/* Role reveal moment: the paper flips open like a card */
+@keyframes announce-role-flip {
+  0% {
+    transform: perspective(700px) rotateY(0deg) scale(1);
+  }
+  50% {
+    transform: perspective(700px) rotateY(540deg) scale(1.08);
+    filter: brightness(1.3);
+  }
+  100% {
+    transform: perspective(700px) rotateY(1080deg) scale(1);
+  }
+}
+
+@keyframes announce-sparkle {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.7) rotate(-12deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.25) rotate(12deg);
+  }
+}
+
+.announce-role-flip {
+  animation: announce-role-flip 1.4s ease-in-out infinite;
+}
+
+.announce-sparkle {
+  animation: announce-sparkle 0.9s ease-in-out infinite;
+}

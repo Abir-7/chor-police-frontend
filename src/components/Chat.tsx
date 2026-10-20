@@ -1,0 +1,202 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { getSocket } from '../socket';
+import { ChatMessage, ChatReaction } from '../types';
+import { Send, MessageSquare, X } from 'lucide-react';
+
+const EMOJIS = ['😂', '🕵️', '🤫', '😱', '👑', '🔥', '👀', '👍'];
+
+interface ChatProps {
+  currentUserId: string;
+}
+
+export const Chat: React.FC<ChatProps> = ({ currentUserId }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [inputMessage, setInputMessage] = useState('');
+  const [floatingReactions, setFloatingReactions] = useState<
+    { id: string; reaction: string; senderName: string }[]
+  >([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isOpenRef = useRef(isOpen);
+
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+    if (isOpen) {
+      setUnreadCount(0);
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const socket = getSocket();
+
+    const handleMessage = (msg: ChatMessage) => {
+      setMessages((prev) => [...prev, msg]);
+      // Only count incoming messages from other players as unread when drawer is closed
+      if (!isOpenRef.current && msg.senderId !== currentUserId) {
+        setUnreadCount((prev) => prev + 1);
+      }
+    };
+
+    const handleReaction = (reaction: ChatReaction) => {
+      const id = Math.random().toString();
+      setFloatingReactions((prev) => [...prev, { id, ...reaction }]);
+      setTimeout(() => {
+        setFloatingReactions((prev) => prev.filter((r) => r.id !== id));
+      }, 3000);
+    };
+
+    socket.on('chat:message', handleMessage);
+    socket.on('chat:reaction', handleReaction);
+
+    return () => {
+      socket.off('chat:message', handleMessage);
+      socket.off('chat:reaction', handleReaction);
+    };
+  }, [currentUserId]);
+
+  useEffect(() => {
+    if (isOpen) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isOpen]);
+
+  const handleSend = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputMessage.trim()) return;
+    const socket = getSocket();
+    socket.emit('chat:send-message', { message: inputMessage.trim() });
+    setInputMessage('');
+  };
+
+  const sendReaction = (reaction: string) => {
+    const socket = getSocket();
+    socket.emit('chat:send-reaction', { reaction });
+  };
+
+  return (
+    <>
+      {/* Floating Reactions on Screen */}
+      <div className="fixed bottom-24 right-4 sm:right-6 pointer-events-none z-50 flex flex-col gap-2 items-end max-w-[90vw]">
+        {floatingReactions.map((r) => (
+          <div
+            key={r.id}
+            className="animate-bounce bg-slate-900/90 text-white px-4 py-2 rounded-full border border-amber-500/30 shadow-lg text-lg flex items-center gap-2"
+          >
+            <span>{r.reaction}</span>
+            <span className="text-xs text-amber-300 font-semibold">{r.senderName}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Floating Chat Toggle Button */}
+      <div className="fixed bottom-5 right-4 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2">
+        {/* Quick Reaction Bar */}
+        <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700 p-1.5 rounded-full shadow-xl flex items-center gap-1 max-w-[60vw] overflow-x-auto">
+          {EMOJIS.slice(0, 4).map((emoji) => (
+            <button
+              key={emoji}
+              onClick={() => sendReaction(emoji)}
+              className="text-xl p-1.5 hover:scale-125 transition-transform cursor-pointer"
+              title="React"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="relative bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 p-3.5 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-transform font-bold cursor-pointer"
+        >
+          {isOpen ? <X className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}
+          {!isOpen && unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs min-w-5 h-5 px-1 rounded-full flex items-center justify-center font-bold animate-pulse shadow-lg border-2 border-slate-950">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Chat Drawer / Window */}
+      {isOpen && (
+        <div className="fixed bottom-20 right-4 left-4 sm:left-auto sm:right-6 sm:w-96 h-96 max-h-[calc(100vh-9rem)] bg-slate-900/95 backdrop-blur-lg border border-slate-700/80 rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden animate-in fade-in slide-in-from-bottom-6">
+          {/* Header */}
+          <div className="bg-slate-800/80 px-4 py-3 border-b border-slate-700 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-amber-400" />
+              <h3 className="font-bold text-sm text-slate-100">Room Chat</h3>
+            </div>
+            <div className="flex items-center gap-1">
+              {EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => sendReaction(emoji)}
+                  className="hover:scale-125 transition-transform text-sm p-1 cursor-pointer"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Messages Body */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {messages.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-xs text-slate-400 italic">
+                Say something or send a reaction!
+              </div>
+            ) : (
+              messages.map((m, idx) => {
+                const isMe = m.senderId === currentUserId;
+                return (
+                  <div
+                    key={idx}
+                    className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
+                  >
+                    <span className="text-[10px] text-slate-400 mb-0.5 px-1">
+                      {isMe ? 'You' : m.senderName}
+                    </span>
+                    <div
+                      className={`px-3 py-1.5 rounded-2xl text-sm max-w-[80%] break-words ${
+                        isMe
+                          ? 'bg-amber-500 text-slate-950 font-medium rounded-br-none'
+                          : 'bg-slate-800 text-slate-100 border border-slate-700 rounded-bl-none'
+                      }`}
+                    >
+                      {m.message}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input Form */}
+          <form
+            onSubmit={handleSend}
+            className="p-2.5 bg-slate-800/80 border-t border-slate-700 flex gap-2"
+          >
+            <input
+              type="text"
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              placeholder="Type message..."
+              maxLength={200}
+              className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+            />
+            <button
+              type="submit"
+              disabled={!inputMessage.trim()}
+              className="bg-amber-500 disabled:opacity-40 text-slate-950 p-2 rounded-xl font-bold hover:bg-amber-400 transition-colors cursor-pointer"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </form>
+        </div>
+      )}
+    </>
+  );
+};

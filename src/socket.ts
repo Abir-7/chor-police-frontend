@@ -1,0 +1,28 @@
+import { io, Socket } from 'socket.io-client';
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+
+let socket: Socket | null = null;
+
+export const getSocket = (): Socket => {
+  if (!socket) {
+    socket = io(BACKEND_URL, {
+      autoConnect: true,
+      reconnection: true,
+      // The backend sleeps on a free tier, so a cold start can take well over
+      // a minute. Never give up: keep retrying until the server answers.
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+    });
+
+    socket.on('connect', () => {
+      console.log('Connected to socket server:', socket?.id);
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('Disconnected from socket server:', reason);
+    });
+  }
+  return socket;
+};
