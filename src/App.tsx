@@ -51,6 +51,7 @@ export const App: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [hasSession, setHasSession] = useState(false);
+  const [seatPin, setSeatPin] = useState<string>('');
   const [isShuffling, setIsShuffling] = useState(false);
   const [shuffleLabel, setShuffleLabel] = useState('Shuffling Papers...');
   const [pendingGameState, setPendingGameState] = useState<PublicGameState | null>(null);
@@ -91,20 +92,26 @@ export const App: React.FC = () => {
     return () => clearTimeout(timer);
   }, [errorMessage]);
 
-  // Check saved session on mount
+  // Check saved session on mount. localStorage (not sessionStorage) so a
+  // closed tab or browser restart can still resume the seat.
   useEffect(() => {
-    const savedRoomCode = sessionStorage.getItem('chor_roomCode');
-    const savedToken = sessionStorage.getItem('chor_token');
-    const savedPlayerId = sessionStorage.getItem('chor_playerId');
+    const savedRoomCode = localStorage.getItem('chor_roomCode');
+    const savedToken = localStorage.getItem('chor_token');
+    const savedPlayerId = localStorage.getItem('chor_playerId');
+    const savedSeatPin = localStorage.getItem('chor_seatPin');
 
     if (savedRoomCode && savedToken && savedPlayerId) {
       setHasSession(true);
     }
+
+    if (savedSeatPin) {
+      setSeatPin(savedSeatPin);
+    }
   }, []);
 
   const triggerReconnect = useCallback(() => {
-    const savedRoomCode = sessionStorage.getItem('chor_roomCode');
-    const savedToken = sessionStorage.getItem('chor_token');
+    const savedRoomCode = localStorage.getItem('chor_roomCode');
+    const savedToken = localStorage.getItem('chor_token');
 
     if (savedRoomCode && savedToken) {
       setLoading(true);
@@ -117,13 +124,54 @@ export const App: React.FC = () => {
     }
   }, []);
 
+  // Restore a seat from a fresh browser where no session was saved: the
+  // player supplies the room code, the name they joined with, and their PIN.
+  const handleReclaimSeat = (
+    roomCodeValue: string,
+    playerName: string,
+    pin: string,
+  ) => {
+    setLoading(true);
+    setErrorMessage(null);
+    getSocket().emit('room:reclaim', {
+      roomCode: roomCodeValue,
+      playerName,
+      seatPin: pin,
+    });
+  };
+
   useEffect(() => {
     const socket = getSocket();
 
+    // Persist the seat credentials so a closed tab, a browser restart, or a
+    // crash can resume the same seat on this device without asking for a PIN.
+    const saveSession = (data: {
+      roomCode: string;
+      player: RoomPlayer;
+      reconnectToken: string;
+      seatPin?: string;
+    }) => {
+      localStorage.setItem('chor_roomCode', data.roomCode);
+      localStorage.setItem('chor_token', data.reconnectToken);
+      localStorage.setItem('chor_playerId', data.player.id);
+
+      if (data.seatPin) {
+        localStorage.setItem('chor_seatPin', data.seatPin);
+        setSeatPin(data.seatPin);
+      }
+    };
+
+    const clearSession = () => {
+      localStorage.removeItem('chor_roomCode');
+      localStorage.removeItem('chor_token');
+      localStorage.removeItem('chor_playerId');
+      localStorage.removeItem('chor_seatPin');
+    };
+
     const handleConnect = () => {
       // Auto-reconnect if we have a session saved
-      const savedRoomCode = sessionStorage.getItem('chor_roomCode');
-      const savedToken = sessionStorage.getItem('chor_token');
+      const savedRoomCode = localStorage.getItem('chor_roomCode');
+      const savedToken = localStorage.getItem('chor_token');
 
       if (savedRoomCode && savedToken) {
         socket.emit('room:reconnect', {
@@ -145,6 +193,7 @@ export const App: React.FC = () => {
       roomCode: string;
       player: RoomPlayer;
       reconnectToken: string;
+      seatPin?: string;
       players: RoomPlayer[];
     }) => {
       setInRoom(true);
@@ -156,15 +205,14 @@ export const App: React.FC = () => {
       setErrorMessage(null);
       setHasSession(true);
 
-      sessionStorage.setItem('chor_roomCode', data.roomCode);
-      sessionStorage.setItem('chor_token', data.reconnectToken);
-      sessionStorage.setItem('chor_playerId', data.player.id);
+      saveSession(data);
     };
 
     const handleRoomJoined = (data: {
       roomCode: string;
       player: RoomPlayer;
       reconnectToken: string;
+      seatPin?: string;
       players: RoomPlayer[];
     }) => {
       setInRoom(true);
@@ -176,15 +224,14 @@ export const App: React.FC = () => {
       setErrorMessage(null);
       setHasSession(true);
 
-      sessionStorage.setItem('chor_roomCode', data.roomCode);
-      sessionStorage.setItem('chor_token', data.reconnectToken);
-      sessionStorage.setItem('chor_playerId', data.player.id);
+      saveSession(data);
     };
 
     const handleRoomReconnected = (data: {
       roomCode: string;
       player: RoomPlayer;
       reconnectToken: string;
+      seatPin?: string;
       players: RoomPlayer[];
     }) => {
       setInRoom(true);
@@ -196,9 +243,7 @@ export const App: React.FC = () => {
       setErrorMessage(null);
       setHasSession(true);
 
-      sessionStorage.setItem('chor_roomCode', data.roomCode);
-      sessionStorage.setItem('chor_token', data.reconnectToken);
-      sessionStorage.setItem('chor_playerId', data.player.id);
+      saveSession(data);
     };
 
     const handleRoomUpdated = (data: { roomCode: string; players: RoomPlayer[] }) => {
@@ -209,15 +254,33 @@ export const App: React.FC = () => {
       }
     };
 
-    const handleRoomLeft = () => {
-      setInRoom(false);       setGameState(null);
+    const resetToLobby = () => {
+      setInRoom(false);
+      setGameState(null);
       setMyRole(undefined);
+      setPartnerThief(undefined);
+      setTimeLeft(undefined);
       setHasSession(false);
       cancelShuffle();
       setAnnouncement(null);
-      sessionStorage.removeItem('chor_roomCode');
-      sessionStorage.removeItem('chor_token');
-      sessionStorage.removeItem('chor_playerId');
+      clearSession();
+    };
+
+    const handleRoomLeft = () => {
+      resetToLobby();
+    };
+
+    // The host removed this player: there is no seat to come back to.
+    const handleKicked = (data: { message?: string }) => {
+      resetToLobby();
+      setLoading(false);
+      setSeatPin('');
+      setErrorMessage(data?.message ?? 'You were removed from the room.');
+    };
+
+    // Another player's seat was released (kicked or timed out).
+    const handlePlayerRemoved = (data: { message?: string }) => {
+      setErrorMessage(data?.message ?? 'A player was removed from the room.');
     };
 
     const handleRoomError = (data: { message: string }) => {
@@ -227,15 +290,14 @@ export const App: React.FC = () => {
       setErrorMessage(data.message);
       setLoading(false);
 
-      // If reconnect token is invalid/expired, wipe it
+      // If reconnect token is invalid/expired, wipe it so the lobby offers a
+      // fresh join instead of a reconnect that can never succeed.
       if (
         data.message?.toLowerCase().includes('token') ||
         data.message?.toLowerCase().includes('not found')
       ) {
         setHasSession(false);
-        sessionStorage.removeItem('chor_roomCode');
-        sessionStorage.removeItem('chor_token');
-        sessionStorage.removeItem('chor_playerId');
+        clearSession();
       }
     };
 
@@ -413,6 +475,8 @@ export const App: React.FC = () => {
     socket.on('room:reconnected', handleRoomReconnected);
     socket.on('room:updated', handleRoomUpdated);
     socket.on('room:left', handleRoomLeft);
+    socket.on('room:kicked', handleKicked);
+    socket.on('room:player-removed', handlePlayerRemoved);
     socket.on('room:error', handleRoomError);
 
     socket.on('game:started', handleGameStarted);
@@ -435,6 +499,8 @@ export const App: React.FC = () => {
       socket.off('room:reconnected', handleRoomReconnected);
       socket.off('room:updated', handleRoomUpdated);
       socket.off('room:left', handleRoomLeft);
+      socket.off('room:kicked', handleKicked);
+      socket.off('room:player-removed', handlePlayerRemoved);
       socket.off('room:error', handleRoomError);
       socket.off('game:started', handleGameStarted);
       socket.off('game:state-updated', handleGameStateUpdated);
@@ -518,11 +584,18 @@ export const App: React.FC = () => {
     setPartnerThief(undefined);
     setTimeLeft(undefined);
     setHasSession(false);
+    setSeatPin('');
     cancelShuffle();
     setAnnouncement(null);
-    sessionStorage.removeItem('chor_roomCode');
-    sessionStorage.removeItem('chor_token');
-    sessionStorage.removeItem('chor_playerId');
+    localStorage.removeItem('chor_roomCode');
+    localStorage.removeItem('chor_token');
+    localStorage.removeItem('chor_playerId');
+    localStorage.removeItem('chor_seatPin');
+  };
+
+  // Host-only: release a seat that went dark so the room can continue.
+  const handleKickPlayer = (playerId: string) => {
+    getSocket().emit('room:kick', { playerId });
   };
 
   const handleStartGame = (settings?: GameSettings) => {
@@ -575,6 +648,7 @@ export const App: React.FC = () => {
         <LobbyScreen
           onCreateRoom={handleCreateRoom}
           onJoinRoom={handleJoinRoom}
+          onReclaimSeat={handleReclaimSeat}
           onReconnect={triggerReconnect}
           hasActiveSession={hasSession}
           isLoading={loading}
@@ -583,11 +657,16 @@ export const App: React.FC = () => {
       ) : !gameState || gameState.phase === GamePhase.WAITING ? (
         <WaitingRoom
           roomCode={roomCode}
+          playerName={
+            players.find((p) => p.id === currentUserId)?.name ?? ''
+          }
+          seatPin={seatPin}
           players={players}
           currentUserId={currentUserId}
           isHost={isHost}
           onStartGame={handleStartGame}
           onLeaveRoom={handleLeaveRoom}
+          onKickPlayer={handleKickPlayer}
         />
       ) : (
         <GameBoard

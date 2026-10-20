@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { Crown, Users, Sparkles, LogIn, Play, RefreshCw } from "lucide-react";
+import { Crown, Users, Sparkles, LogIn, Play, RefreshCw, KeyRound } from "lucide-react";
 
 interface LobbyScreenProps {
   onCreateRoom: (playerName: string) => void;
   onJoinRoom: (roomCode: string, playerName: string) => void;
+  onReclaimSeat?: (roomCode: string, playerName: string, seatPin: string) => void;
   onReconnect?: () => void;
   hasActiveSession?: boolean;
   isLoading: boolean;
@@ -13,14 +14,16 @@ interface LobbyScreenProps {
 export const LobbyScreen: React.FC<LobbyScreenProps> = ({
   onCreateRoom,
   onJoinRoom,
+  onReclaimSeat,
   onReconnect,
   hasActiveSession,
   isLoading,
   error,
 }) => {
-  const [tab, setTab] = useState<"create" | "join">("create");
+  const [tab, setTab] = useState<"create" | "join" | "rejoin">("create");
   const [playerName, setPlayerName] = useState("");
   const [roomCode, setRoomCode] = useState("");
+  const [seatPin, setSeatPin] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,10 +31,18 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
 
     if (tab === "create") {
       onCreateRoom(playerName.trim());
-    } else {
-      if (roomCode.trim().length !== 6) return;
-      onJoinRoom(roomCode.trim(), playerName.trim());
+      return;
     }
+
+    if (roomCode.trim().length !== 6) return;
+
+    if (tab === "join") {
+      onJoinRoom(roomCode.trim(), playerName.trim());
+      return;
+    }
+
+    if (seatPin.trim().length !== 4 || !onReclaimSeat) return;
+    onReclaimSeat(roomCode.trim(), playerName.trim(), seatPin.trim());
   };
 
   return (
@@ -76,7 +87,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
         )}
 
         {/* Tab switch */}
-        <div className="grid grid-cols-2 p-1 bg-slate-950/60 rounded-2xl mb-6 border border-slate-800">
+        <div className="grid grid-cols-3 p-1 bg-slate-950/60 rounded-2xl mb-6 border border-slate-800">
           <button
             type="button"
             onClick={() => setTab("create")}
@@ -100,6 +111,18 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
           >
             <LogIn className="w-4 h-4" />
             Join Room
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("rejoin")}
+            className={`py-2.5 text-sm font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
+              tab === "rejoin"
+                ? "bg-amber-500 text-slate-950 shadow-md scale-[1.02]"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <KeyRound className="w-4 h-4" />
+            Rejoin
           </button>
         </div>
 
@@ -128,7 +151,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
             />
           </div>
 
-          {tab === "join" && (
+          {tab !== "create" && (
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
                 6-Digit Room Code
@@ -147,12 +170,37 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
             </div>
           )}
 
+          {tab === "rejoin" && (
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                4-Digit Seat PIN
+              </label>
+              <input
+                type="text"
+                required
+                inputMode="numeric"
+                value={seatPin}
+                onChange={(e) =>
+                  setSeatPin(e.target.value.replace(/\D/g, "").slice(0, 4))
+                }
+                placeholder="0000"
+                maxLength={4}
+                className="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl px-4 py-3 text-white placeholder-slate-600 text-center tracking-[0.5em] text-lg font-mono focus:outline-none focus:border-amber-400 transition-colors"
+              />
+              <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+                The PIN was shown in the waiting room. Use the same name you
+                joined with and this PIN to get your seat back in any browser.
+              </p>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={
               isLoading ||
               !playerName.trim() ||
-              (tab === "join" && roomCode.length !== 6)
+              (tab !== "create" && roomCode.length !== 6) ||
+              (tab === "rejoin" && seatPin.length !== 4)
             }
             className="w-full mt-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-40 text-slate-950 font-black py-3.5 px-4 rounded-xl shadow-lg transition-all duration-150 flex items-center justify-center gap-2 uppercase tracking-wider cursor-pointer"
           >
@@ -162,9 +210,13 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
               <>
                 <Crown className="w-5 h-5" /> Create & Host
               </>
-            ) : (
+            ) : tab === "join" ? (
               <>
                 <Play className="w-5 h-5" /> Enter Game
+              </>
+            ) : (
+              <>
+                <KeyRound className="w-5 h-5" /> Reclaim My Seat
               </>
             )}
           </button>

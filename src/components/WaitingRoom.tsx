@@ -1,23 +1,29 @@
 import React from 'react';
 import { RoomPlayer, GameSettings } from '../types';
-import { Crown, Users, Play, Copy, Check, ShieldAlert, LogOut } from 'lucide-react';
+import { Crown, Users, Play, Copy, Check, ShieldAlert, LogOut, KeyRound, UserX } from 'lucide-react';
 
 interface WaitingRoomProps {
   roomCode: string;
+  playerName?: string;
+  seatPin?: string;
   players: RoomPlayer[];
   currentUserId: string;
   isHost: boolean;
   onStartGame: (settings?: GameSettings) => void;
   onLeaveRoom: () => void;
+  onKickPlayer?: (playerId: string) => void;
 }
 
 export const WaitingRoom: React.FC<WaitingRoomProps> = ({
   roomCode,
+  playerName,
+  seatPin,
   players,
   currentUserId,
   isHost,
   onStartGame,
   onLeaveRoom,
+  onKickPlayer,
 }) => {
   const [copied, setCopied] = React.useState(false);
   const [maxRounds, setMaxRounds] = React.useState<number>(5);
@@ -62,6 +68,23 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({
           </button>
         </div>
 
+        {/* Rejoin credentials: lets the player get this seat back from another
+            browser after closing this one. */}
+        {seatPin && (
+          <div className="mt-4 p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-start gap-3">
+            <KeyRound className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+            <div className="text-xs leading-relaxed text-slate-400">
+              <span className="font-bold text-slate-300 uppercase tracking-wider text-[11px] block mb-1">
+                Rejoin PIN: <span className="font-mono text-amber-400 tracking-widest text-sm">{seatPin}</span>
+              </span>
+              If you close this browser, go to the lobby → <b>Rejoin</b> and enter
+              room code <span className="font-mono text-slate-300">{roomCode}</span>
+              {playerName ? <> with the name <span className="text-slate-300">{playerName}</span></> : null}
+              {' '}and this PIN. You have 2 minutes before the seat is released.
+            </div>
+          </div>
+        )}
+
         {/* Players List */}
         <div className="my-6">
           <div className="flex items-center justify-between mb-4">
@@ -100,11 +123,27 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({
                       {p.name} {isMe && '(You)'}
                     </span>
                   </div>
-                  {p.isHost && (
-                    <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-500 text-slate-950 uppercase tracking-wider">
-                      <Crown className="w-3 h-3" /> Host
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {p.isHost && (
+                      <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-500 text-slate-950 uppercase tracking-wider">
+                        <Crown className="w-3 h-3" /> Host
+                      </span>
+                    )}
+                    {isHost && !isMe && onKickPlayer && (
+                      <button
+                        type="button"
+                        onClick={() => onKickPlayer(p.id)}
+                        title={
+                          p.isConnected
+                            ? `Remove ${p.name} from the room`
+                            : `${p.name} is disconnected — free their seat`
+                        }
+                        className="p-1 rounded-md bg-rose-500/10 hover:bg-rose-500/25 text-rose-400 border border-rose-500/20 transition-colors cursor-pointer"
+                      >
+                        <UserX className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
