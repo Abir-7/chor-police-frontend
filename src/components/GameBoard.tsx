@@ -50,7 +50,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   // The GameBoard component stays mounted between rounds, so without this
   // reset the police's local suspect selection from a finished round would
-  // carry over: after the King picks the target, a suspect would already
+  // carry over: after the Babu picks the target, a suspect would already
   // show as selected (and "Confirm Arrest" enabled) even though the police
   // has not chosen anyone in the new round.
   React.useEffect(() => {
@@ -274,12 +274,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         {/* PHASE 2: ROLE REVEAL & ALL PLAYERS' REVEALED ROLES */}
         {gameState.phase === GamePhase.ROLE_REVEAL && (
           <div className="flex flex-col items-center text-center max-w-4xl w-full animate-in fade-in">
-            {/* King's Command first — always at the top for Raja and everyone else */}
+            {/* Babu's Command first — always at the top for Babu and everyone else */}
             {isRaja ? (
               <div className="w-full max-w-xl bg-slate-900/90 border border-amber-500/40 p-5 rounded-2xl shadow-xl mb-6 order-first">
                 <div className="flex items-center justify-center gap-2 mb-2 text-amber-400">
                   <Crown className="w-5 h-5" />
-                  <span className="font-black text-sm uppercase">King's Command</span>
+                  <span className="font-black text-sm uppercase">Babu's Command</span>
                 </div>
                 <p className="text-xs text-slate-300 mb-4">
                   Select which thief the Police must track down:
@@ -302,7 +302,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             ) : (
               <div className="w-full max-w-xl p-4 bg-slate-900/60 rounded-2xl border border-slate-800 text-xs text-slate-400 flex items-center justify-center gap-2 mb-6 order-first">
                 <Crown className="w-4 h-4 text-amber-400 animate-bounce" />
-                <span>Waiting for King Raja to choose the target thief...</span>
+                <span>Waiting for Babu to choose the target thief...</span>
               </div>
             )}
 

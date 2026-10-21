@@ -14,11 +14,11 @@ export const ROLE_INFO: Record<
   { name: string; score: number; color: string; icon: React.ReactNode; desc: string }
 > = {
   [GameRole.RAJA]: {
-    name: 'Raja',
+    name: 'Babu',
     score: 1000,
     color: 'border-amber-400 bg-gradient-to-b from-amber-950/70 via-slate-900 to-slate-950',
     icon: <Crown className="w-10 h-10 text-amber-400" />,
-    desc: 'The King! 1000 pts. Commands Police to catch thief.',
+    desc: 'The Babu! 1000 pts. Commands Police to catch thief.',
   },
   [GameRole.POLICE]: {
     name: 'Police',

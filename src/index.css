@@ -102,7 +102,7 @@
   animation: gate-fade-in 0.35s ease-out both;
 }
 
-/* Phase announcement overlays (King's pick / Police caught / Police missed) */
+/* Phase announcement overlays (Babu's pick / Police caught / Police missed) */
 @keyframes announce-overlay-in {
   from {
     opacity: 0;

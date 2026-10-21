@@ -49,7 +49,7 @@ export const PhaseAnnouncementOverlay: React.FC<PhaseAnnouncementOverlayProps> =
         <div className="absolute inset-0 pointer-events-none announce-siren" />
         <span className="text-5xl sm:text-8xl mb-4 sm:mb-6 announce-pop">👑</span>
         <p className="text-base sm:text-xl font-black uppercase tracking-[0.25em] sm:tracking-[0.35em] text-amber-300 announce-pop">
-          The King has spoken
+          Babu has spoken
         </p>
         <p className="mt-4 sm:mt-6 text-2xl sm:text-4xl font-black uppercase tracking-wider announce-pop announce-delay">
           <span className="text-slate-300">Catch the </span>

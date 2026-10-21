@@ -355,7 +355,7 @@ export const App: React.FC = () => {
 
     const handleMyRole = (data: { role: GameRole; partnerThief?: { id: string; name: string; role: GameRole } }) => {
       // Always overwrite both values: if the server does not include a
-      // partner (e.g. this player is Raja/Police now), any partner identity
+      // partner (e.g. this player is Babu/Police now), any partner identity
       // left over from a previous round must be cleared, not kept.
       setMyRole(data.role);
       setPartnerThief(data.partnerThief);
@@ -404,7 +404,7 @@ export const App: React.FC = () => {
       targetRole: GameRole.CHOR | GameRole.DAKAT;
       gameState: PublicGameState;
     }) => {
-      // Everyone sees "The King has spoken — Catch the X!" before the
+      // Everyone sees "Babu has spoken — Catch the X!" before the
       // guessing screen appears.
       setAnnouncement({
         kind: 'king',
@@ -526,7 +526,7 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [timeLeft]);
 
-  // Play the King/Police announcement, then reveal the underlying screen
+  // Play the Babu/Police announcement, then reveal the underlying screen
   // (round result or guessing phase) that arrived while it was playing.
   useEffect(() => {
     if (!announcement) return;
@@ -693,7 +693,7 @@ export const App: React.FC = () => {
       {/* Shuffle transition between rounds / starting a match */}
       <ShuffleOverlay isVisible={isShuffling} label={shuffleLabel} />
 
-      {/* Role reveal / King's pick / Police caught / Police missed announcements */}
+      {/* Role reveal / Babu's pick / Police caught / Police missed announcements */}
       {announcement && (
         <PhaseAnnouncementOverlay kind={announcement.kind} targetRole={announcement.targetRole} />
       )}

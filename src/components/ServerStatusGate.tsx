@@ -32,7 +32,7 @@ interface ServerStatusGateProps {
  *
  * The backend runs on a free tier that shuts down when idle, so the first
  * visit after a while has to wait for it to boot. While waiting we deal the
- * game's role cards (Raja, Police, Chor, Dakat) and count the seconds
+ * game's role cards (Babu, Police, Chor, Dakat) and count the seconds
  * (1, 2, 3 ...) until the socket connects, then the real app is rendered.
  */
 export const ServerStatusGate: React.FC<ServerStatusGateProps> = ({

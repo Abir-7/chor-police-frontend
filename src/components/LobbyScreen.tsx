@@ -172,7 +172,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
               Chor Police
             </h1>
             <p className="text-[11px] font-medium text-slate-400 sm:text-xs">
-              Raja • Police • Chor • Dakat
+              Babu • Police • Chor • Dakat
             </p>
           </div>
         </header>
