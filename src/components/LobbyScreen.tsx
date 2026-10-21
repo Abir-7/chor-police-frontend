@@ -393,7 +393,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
         {/* Footer */}
         <footer className="relative mt-5 flex items-center justify-center gap-2 border-t border-slate-800/70 pt-4 text-[11px] font-medium text-slate-500">
           <Users className="h-3.5 w-3.5 shrink-0" />
-          <span>5–8 players · share your code to invite</span>
+          <span>4–8 players · share your code to invite</span>
         </footer>
       </div>
     </div>

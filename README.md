@@ -23,7 +23,7 @@ A real-time multiplayer web version of the classic Bengali party game **Chor–D
 
 ## How a match plays out
 
-1. **Lobby** — the host creates a room and shares the 6-digit code; 5–8 players are needed to start.
+1. **Lobby** — the host creates a room and shares the 6-digit code; 4–8 players are needed to start.
 2. **Picking** — every player takes one shuffled paper slip. Anyone who doesn't pick in time gets a slip auto-assigned.
 3. **Role reveal** — cards open. Chor and Dakat stay masked as *Suspect*; everyone else is revealed.
 4. **Babu's command** — the Babu picks which thief the Police must hunt: **Chor** or **Dakat**.
@@ -44,7 +44,7 @@ A real-time multiplayer web version of the classic Bengali party game **Chor–D
 | `PAGOL` | Madman | 50 |
 | `CHAGOL` | Goat | 100 |
 
-Roles scale with the number of players: 5 → Babu, Police, Chor, Dakat, Jharudar · 6 → + Cleaner · 7 → + Pagol · 8 → + Chagol.
+Roles scale with the number of players: 4 → Babu, Police, Chor, Dakat · 5 → + Jharudar · 6 → + Cleaner · 7 → + Pagol · 8 → + Chagol.
 
 ## Tech stack
 

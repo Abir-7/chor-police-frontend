@@ -28,8 +28,8 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({
   const [copied, setCopied] = React.useState(false);
   const [maxRounds, setMaxRounds] = React.useState<number>(5);
 
-  const canStart = players.length >= 5 && players.length <= 8 && isHost;
-  const neededPlayers = Math.max(0, 5 - players.length);
+  const canStart = players.length >= 4 && players.length <= 8 && isHost;
+  const neededPlayers = Math.max(0, 4 - players.length);
 
   const copyCode = () => {
     navigator.clipboard.writeText(roomCode);
