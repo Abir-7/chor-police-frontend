@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getSocket } from '../socket';
 import { ChatMessage, ChatReaction } from '../types';
+import { playSound } from '../sound';
 import { Send, MessageSquare, X } from 'lucide-react';
 
 const EMOJIS = ['😂', '😭', '😕', '🤝', '🕵️', '🤫', '😱', '👑', '🔥', '👀', '👍'];
@@ -42,6 +43,9 @@ export const Chat: React.FC<ChatProps> = ({ currentUserId }) => {
     };
 
     const handleReaction = (reaction: ChatReaction) => {
+      // Quick blip for every floating emoji (own or someone else's).
+      playSound('pop');
+
       const id = Math.random().toString();
       setFloatingReactions((prev) => [...prev, { id, ...reaction }]);
       setTimeout(() => {

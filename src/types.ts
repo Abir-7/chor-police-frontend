@@ -23,6 +23,8 @@ export interface RoomPlayer {
   name: string;
   isHost: boolean;
   isConnected: boolean;
+  /** True when this seat is a server-side bot added by the host. */
+  isBot?: boolean;
 }
 
 export interface GamePlayer {
@@ -32,6 +34,7 @@ export interface GamePlayer {
   hasPicked: boolean;
   score: number;
   roundScore: number;
+  isBot?: boolean;
 }
 
 export interface GamePaper {

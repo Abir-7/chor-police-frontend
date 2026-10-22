@@ -1,6 +1,6 @@
 import React from 'react';
 import { RoomPlayer, GameSettings } from '../types';
-import { Crown, Users, Play, Copy, Check, ShieldAlert, LogOut, KeyRound, UserX } from 'lucide-react';
+import { Crown, Users, Play, Copy, Check, ShieldAlert, LogOut, KeyRound, UserX, Bot, Dices } from 'lucide-react';
 
 interface WaitingRoomProps {
   roomCode: string;
@@ -12,7 +12,20 @@ interface WaitingRoomProps {
   onStartGame: (settings?: GameSettings) => void;
   onLeaveRoom: () => void;
   onKickPlayer?: (playerId: string) => void;
+  onAddBot?: (name?: string) => void;
 }
+
+// Fun default names the host can roll with the dice button.
+const BOT_NAME_SUGGESTIONS = [
+  'Bot Ninja',
+  'Bot Rani',
+  'Bot Guru',
+  'Bot Chiku',
+  'Bot Simba',
+  'Bot Cobra',
+  'Bot Pilot',
+  'Bot Dada',
+];
 
 export const WaitingRoom: React.FC<WaitingRoomProps> = ({
   roomCode,
@@ -24,9 +37,11 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({
   onStartGame,
   onLeaveRoom,
   onKickPlayer,
+  onAddBot,
 }) => {
   const [copied, setCopied] = React.useState(false);
   const [maxRounds, setMaxRounds] = React.useState<number>(5);
+  const [botName, setBotName] = React.useState('');
 
   const canStart = players.length >= 4 && players.length <= 8 && isHost;
   const neededPlayers = Math.max(0, 4 - players.length);
@@ -124,6 +139,11 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
+                    {p.isBot && (
+                      <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 uppercase tracking-wider">
+                        <Bot className="w-3 h-3" /> Bot
+                      </span>
+                    )}
                     {p.isHost && (
                       <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-500 text-slate-950 uppercase tracking-wider">
                         <Crown className="w-3 h-3" /> Host
@@ -149,6 +169,60 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({
             })}
           </div>
         </div>
+
+        {/* Add Bot (Host Only) */}
+        {isHost && onAddBot && players.length < 8 && (
+          <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-2xl mb-6">
+            <span className="text-xs font-bold uppercase text-slate-400 tracking-wider block mb-3">
+              Add Bot Player
+            </span>
+            <form
+              className="flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                onAddBot(botName.trim() || undefined);
+                setBotName('');
+              }}
+            >
+              <input
+                type="text"
+                value={botName}
+                onChange={(e) => setBotName(e.target.value)}
+                placeholder="Bot name (optional)"
+                maxLength={20}
+                className="flex-1 min-w-0 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const taken = new Set(
+                    players.map((p) => p.name.toLowerCase()),
+                  );
+                  const options = BOT_NAME_SUGGESTIONS.filter(
+                    (name) => !taken.has(name.toLowerCase()),
+                  );
+                  const pool = options.length > 0 ? options : BOT_NAME_SUGGESTIONS;
+                  setBotName(pool[Math.floor(Math.random() * pool.length)]);
+                }}
+                title="Suggest a bot name"
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
+              >
+                <Dices className="w-4 h-4" />
+              </button>
+              <button
+                type="submit"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-sm font-bold transition-colors cursor-pointer shrink-0"
+              >
+                <Bot className="w-4 h-4" />
+                Add Bot
+              </button>
+            </form>
+            <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
+              Bots fill empty seats so you can start without waiting — they pick
+              slips, play Babu/Police turns and send reactions on their own.
+            </p>
+          </div>
+        )}
 
         {/* Match Settings (Host Only) */}
         {isHost && (

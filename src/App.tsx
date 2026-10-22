@@ -13,12 +13,19 @@ import { GameBoard } from './components/GameBoard';
 import { Chat } from './components/Chat';
 import { ShuffleOverlay } from './components/ShuffleOverlay';
 import { PhaseAnnouncementOverlay } from './components/PhaseAnnouncementOverlay';
+import { SoundToggle } from './components/SoundToggle';
+import { playSound } from './sound';
+
 
 // Minimum time the shuffle animation stays on screen, even if the server
 // responds faster, so every player sees the riffle.
 const SHUFFLE_MIN_MS = 2000;
 // Safety timeout: if the server never confirms the new round, drop the overlay.
 const SHUFFLE_MAX_MS = 5000;
+
+// Ticking stops after this many seconds even if the Police never decides —
+// a stalled game must not tick forever.
+const MAX_TICK_SOUND_TICKS = 20;
 
 // How long each phase announcement animation stays on screen before the
 // underlying screen is revealed (all durations in ms).
@@ -37,6 +44,14 @@ type Announcement = {
   targetRole?: GameRole.CHOR | GameRole.DAKAT;
   nextState: PublicGameState;
 };
+
+// Sound effect played for each phase announcement.
+const ANNOUNCE_SOUNDS = {
+  reveal: 'reveal',
+  king: 'king',
+  caught: 'catch',
+  missed: 'miss',
+} as const;
 
 export const App: React.FC = () => {
   const [inRoom, setInRoom] = useState(false);
@@ -350,6 +365,26 @@ export const App: React.FC = () => {
         setAnnouncement({ kind: 'reveal', nextState: state });
         return;
       }
+
+      // During paper picking, play the slip sound whenever ANY player
+      // claims a paper (own pick or another player's pick).
+      const prev = gameStateRef.current;
+      if (
+        state.phase === GamePhase.PICKING &&
+        (!prev || prev.phase === GamePhase.PICKING)
+      ) {
+        const alreadyPicked = new Set(
+          (prev?.players ?? []).filter((p) => p.hasPicked).map((p) => p.id),
+        );
+        const someoneJustPicked = state.players.some(
+          (p) => p.hasPicked && !alreadyPicked.has(p.id),
+        );
+
+        if (someoneJustPicked) {
+          playSound('pick');
+        }
+      }
+
       setGameState(state);
     };
 
@@ -517,6 +552,29 @@ export const App: React.FC = () => {
     };
   }, [currentUserId]);
 
+  const gamePhase = gameState?.phase;
+
+  // Soft ticking while the Police is deciding whom to arrest. The interval
+  // restarts only when the phase itself changes (not on suspect-selection
+  // state updates), and stops as soon as the arrest or a new phase lands.
+  useEffect(() => {
+    if (gamePhase !== GamePhase.GUESSING) return;
+
+    let ticks = 0;
+
+    const interval = setInterval(() => {
+      ticks += 1;
+
+      if (ticks > MAX_TICK_SOUND_TICKS) {
+        return;
+      }
+
+      playSound('tick');
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [gamePhase]);
+
   // Turn timer countdown effect
   useEffect(() => {
     if (timeLeft === undefined || timeLeft <= 0) return;
@@ -525,6 +583,13 @@ export const App: React.FC = () => {
     }, 1000);
     return () => clearInterval(interval);
   }, [timeLeft]);
+
+  // Sound for each phase announcement: reveal jingle, king's command,
+  // caught/missed round end. Plays on every player's own device.
+  useEffect(() => {
+    if (!announcement) return;
+    playSound(ANNOUNCE_SOUNDS[announcement.kind]);
+  }, [announcement]);
 
   // Play the Babu/Police announcement, then reveal the underlying screen
   // (round result or guessing phase) that arrived while it was playing.
@@ -598,6 +663,12 @@ export const App: React.FC = () => {
     getSocket().emit('room:kick', { playerId });
   };
 
+  // Host-only: add a server-side bot that plays like a real player.
+  const handleAddBot = (name?: string) => {
+    setErrorMessage(null);
+    getSocket().emit('room:add-bot', { name });
+  };
+
   const handleStartGame = (settings?: GameSettings) => {
     triggerShuffle('Shuffling New Match...');
     getSocket().emit('game:start', { settings });
@@ -667,6 +738,7 @@ export const App: React.FC = () => {
           onStartGame={handleStartGame}
           onLeaveRoom={handleLeaveRoom}
           onKickPlayer={handleKickPlayer}
+          onAddBot={handleAddBot}
         />
       ) : (
         <GameBoard
@@ -689,6 +761,9 @@ export const App: React.FC = () => {
 
       {/* Floating Chat / Emote Component */}
       {inRoom && <Chat currentUserId={currentUserId} />}
+
+      {/* Global sound effects mute/unmute toggle */}
+      <SoundToggle />
 
       {/* Shuffle transition between rounds / starting a match */}
       <ShuffleOverlay isVisible={isShuffling} label={shuffleLabel} />
