@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getSocket } from '../socket';
 import { ChatMessage, ChatReaction } from '../types';
 import { playSound } from '../sound';
-import { Send, MessageSquare, X, Smile } from 'lucide-react';
+import { Send, MessageSquare, X } from 'lucide-react';
 
+// Every reaction lives in the always-visible quick bar next to the chat
+// button: about five fit on a phone and the rest scroll horizontally.
 const EMOJIS = ['😂', '😭', '😕', '🤝', '🕵️', '🤫', '😱', '👑', '🔥', '👀', '👍', '💀', '😎', '🥳', '😤', '👏', '⏳'];
-// Shown in the always-visible quick bar next to the chat button.
-const QUICK_EMOJIS = ['😂', '😭', '😕', '🤝', '😱', '🔥', '👍'];
 
 interface ChatProps {
   currentUserId: string;
@@ -17,7 +17,6 @@ export const Chat: React.FC<ChatProps> = ({ currentUserId }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [inputMessage, setInputMessage] = useState('');
-  const [showEmojiPanel, setShowEmojiPanel] = useState(false);
   const [floatingReactions, setFloatingReactions] = useState<
     { id: string; reaction: string; senderName: string }[]
   >([]);
@@ -29,8 +28,6 @@ export const Chat: React.FC<ChatProps> = ({ currentUserId }) => {
     if (isOpen) {
       setUnreadCount(0);
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    } else {
-      setShowEmojiPanel(false);
     }
   }, [isOpen]);
 
@@ -104,14 +101,12 @@ export const Chat: React.FC<ChatProps> = ({ currentUserId }) => {
       <div className="fixed bottom-4 right-3 sm:bottom-6 sm:right-6 z-40 flex items-center gap-1.5 sm:gap-2 max-w-[calc(100vw-1.5rem)]">
         {/* Quick Reaction Bar — the last emojis hide on tiny screens so the
             chat button itself never gets pushed out of view. */}
-        <div className="bg-slate-900/95 backdrop-blur-md border border-slate-700 p-1.5 rounded-full shadow-xl flex items-center gap-0.5 sm:gap-1 min-w-0 overflow-x-auto">
-          {QUICK_EMOJIS.map((emoji, i) => (
+        <div className="bg-slate-900/95 backdrop-blur-md border border-slate-700 p-1.5 rounded-full shadow-xl flex flex-nowrap items-center gap-0.5 sm:gap-1 min-w-0 max-w-[56vw] sm:max-w-[70vw] overflow-x-auto">
+          {EMOJIS.map((emoji) => (
             <button
               key={emoji}
               onClick={() => sendReaction(emoji)}
-              className={`text-[1.15rem] sm:text-xl p-2 sm:p-1.5 hover:scale-125 active:scale-90 transition-transform cursor-pointer shrink-0 ${
-                i >= QUICK_EMOJIS.length - 2 ? 'hidden sm:block' : ''
-              }`}
+              className="text-[1.15rem] sm:text-xl p-2 sm:p-1.5 hover:scale-125 active:scale-90 transition-transform cursor-pointer shrink-0"
               title="React"
             >
               {emoji}
@@ -174,46 +169,11 @@ export const Chat: React.FC<ChatProps> = ({ currentUserId }) => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Emoji section — every reaction in one scrollable grid */}
-          {showEmojiPanel && (
-            <div className="border-t border-slate-700 bg-slate-900/90 p-2.5 max-h-32 overflow-y-auto shrink-0">
-              <span className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 px-0.5">
-                Send a reaction
-              </span>
-              <div className="grid grid-cols-8 sm:grid-cols-9 gap-1">
-                {EMOJIS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    onClick={() => sendReaction(emoji)}
-                    className="text-xl py-1.5 rounded-lg hover:bg-slate-700/70 active:scale-90 transition cursor-pointer"
-                    title="React"
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Input Form */}
           <form
             onSubmit={handleSend}
             className="p-2.5 bg-slate-800/80 border-t border-slate-700 flex gap-2"
           >
-            <button
-              type="button"
-              onClick={() => setShowEmojiPanel((open) => !open)}
-              aria-label="Emoji reactions"
-              aria-expanded={showEmojiPanel}
-              className={`shrink-0 p-2.5 rounded-xl border transition-colors cursor-pointer ${
-                showEmojiPanel
-                  ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-                  : 'bg-slate-900 border-slate-700 text-slate-300 hover:text-amber-300 hover:border-amber-500/40'
-              }`}
-            >
-              <Smile className="w-5 h-5" />
-            </button>
             <input
               type="text"
               value={inputMessage}
