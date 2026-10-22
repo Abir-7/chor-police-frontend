@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getSocket } from '../socket';
 import { ChatMessage, ChatReaction } from '../types';
 import { playSound } from '../sound';
-import { Send, MessageSquare, X } from 'lucide-react';
+import { Send, MessageSquare, X, Smile } from 'lucide-react';
 
 const EMOJIS = ['😂', '😭', '😕', '🤝', '🕵️', '🤫', '😱', '👑', '🔥', '👀', '👍', '💀', '😎', '🥳', '😤', '👏', '⏳'];
 // Shown in the always-visible quick bar next to the chat button.
@@ -17,6 +17,7 @@ export const Chat: React.FC<ChatProps> = ({ currentUserId }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [inputMessage, setInputMessage] = useState('');
+  const [showEmojiPanel, setShowEmojiPanel] = useState(false);
   const [floatingReactions, setFloatingReactions] = useState<
     { id: string; reaction: string; senderName: string }[]
   >([]);
@@ -28,6 +29,8 @@ export const Chat: React.FC<ChatProps> = ({ currentUserId }) => {
     if (isOpen) {
       setUnreadCount(0);
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      setShowEmojiPanel(false);
     }
   }, [isOpen]);
 
@@ -138,20 +141,6 @@ export const Chat: React.FC<ChatProps> = ({ currentUserId }) => {
             <h3 className="font-bold text-sm text-slate-100">Room Chat</h3>
           </div>
 
-          {/* Emoji reaction strip */}
-          <div className="bg-slate-800/40 px-3 py-2 border-b border-slate-700/70 flex items-center gap-1 overflow-x-auto">
-            {EMOJIS.map((emoji) => (
-              <button
-                key={emoji}
-                onClick={() => sendReaction(emoji)}
-                className="shrink-0 hover:scale-125 active:scale-90 transition-transform text-lg p-1.5 cursor-pointer"
-                title="React"
-              >
-                {emoji}
-              </button>
-            ))}
-          </div>
-
           {/* Messages Body */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {messages.length === 0 ? (
@@ -185,11 +174,46 @@ export const Chat: React.FC<ChatProps> = ({ currentUserId }) => {
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Emoji section — every reaction in one scrollable grid */}
+          {showEmojiPanel && (
+            <div className="border-t border-slate-700 bg-slate-900/90 p-2.5 max-h-32 overflow-y-auto shrink-0">
+              <span className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 px-0.5">
+                Send a reaction
+              </span>
+              <div className="grid grid-cols-8 sm:grid-cols-9 gap-1">
+                {EMOJIS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => sendReaction(emoji)}
+                    className="text-xl py-1.5 rounded-lg hover:bg-slate-700/70 active:scale-90 transition cursor-pointer"
+                    title="React"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Input Form */}
           <form
             onSubmit={handleSend}
             className="p-2.5 bg-slate-800/80 border-t border-slate-700 flex gap-2"
           >
+            <button
+              type="button"
+              onClick={() => setShowEmojiPanel((open) => !open)}
+              aria-label="Emoji reactions"
+              aria-expanded={showEmojiPanel}
+              className={`shrink-0 p-2.5 rounded-xl border transition-colors cursor-pointer ${
+                showEmojiPanel
+                  ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                  : 'bg-slate-900 border-slate-700 text-slate-300 hover:text-amber-300 hover:border-amber-500/40'
+              }`}
+            >
+              <Smile className="w-5 h-5" />
+            </button>
             <input
               type="text"
               value={inputMessage}
