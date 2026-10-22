@@ -53,7 +53,7 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center px-4 pb-4 pt-20 sm:p-6">
+    <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center px-4 pb-24 pt-20 sm:p-6">
       <div className="w-full max-w-xl bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative">
         {/* Top bar */}
         <div className="flex items-center justify-between pb-6 border-b border-slate-800">

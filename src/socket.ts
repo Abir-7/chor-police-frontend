@@ -12,8 +12,13 @@ export const getSocket = (): Socket => {
       // The backend sleeps on a free tier, so a cold start can take well over
       // a minute. Never give up: keep retrying until the server answers.
       reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
+      reconnectionDelay: 500,
+      reconnectionDelayMax: 2000,
+      // Prefer a live websocket connection. By default socket.io starts
+      // with HTTP long-polling and upgrades later, which adds perceptible
+      // message lag (especially on mobile networks) — connect via websocket
+      // immediately and fall back to polling only if websocket fails.
+      transports: ['websocket', 'polling'],
     });
 
     socket.on('connect', () => {

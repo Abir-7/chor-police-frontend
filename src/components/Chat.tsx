@@ -98,14 +98,17 @@ export const Chat: React.FC<ChatProps> = ({ currentUserId }) => {
       </div>
 
       {/* Floating Chat Toggle Button */}
-      <div className="fixed bottom-5 right-4 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2">
-        {/* Quick Reaction Bar */}
-        <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700 p-1.5 rounded-full shadow-xl flex items-center gap-1 max-w-[60vw] overflow-x-auto">
-          {QUICK_EMOJIS.map((emoji) => (
+      <div className="fixed bottom-4 right-3 sm:bottom-6 sm:right-6 z-40 flex items-center gap-1.5 sm:gap-2 max-w-[calc(100vw-1.5rem)]">
+        {/* Quick Reaction Bar — the last emojis hide on tiny screens so the
+            chat button itself never gets pushed out of view. */}
+        <div className="bg-slate-900/95 backdrop-blur-md border border-slate-700 p-1.5 rounded-full shadow-xl flex items-center gap-0.5 sm:gap-1 min-w-0 overflow-x-auto">
+          {QUICK_EMOJIS.map((emoji, i) => (
             <button
               key={emoji}
               onClick={() => sendReaction(emoji)}
-              className="text-xl p-1.5 hover:scale-125 transition-transform cursor-pointer"
+              className={`text-[1.15rem] sm:text-xl p-2 sm:p-1.5 hover:scale-125 active:scale-90 transition-transform cursor-pointer shrink-0 ${
+                i >= QUICK_EMOJIS.length - 2 ? 'hidden sm:block' : ''
+              }`}
               title="React"
             >
               {emoji}
@@ -115,7 +118,7 @@ export const Chat: React.FC<ChatProps> = ({ currentUserId }) => {
 
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="relative bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 p-3.5 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-transform font-bold cursor-pointer"
+          className="relative shrink-0 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 p-3.5 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-transform font-bold cursor-pointer"
         >
           {isOpen ? <X className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}
           {!isOpen && unreadCount > 0 && (
@@ -141,7 +144,7 @@ export const Chat: React.FC<ChatProps> = ({ currentUserId }) => {
               <button
                 key={emoji}
                 onClick={() => sendReaction(emoji)}
-                className="shrink-0 hover:scale-125 transition-transform text-base p-1 cursor-pointer"
+                className="shrink-0 hover:scale-125 active:scale-90 transition-transform text-lg p-1.5 cursor-pointer"
                 title="React"
               >
                 {emoji}
@@ -198,9 +201,10 @@ export const Chat: React.FC<ChatProps> = ({ currentUserId }) => {
             <button
               type="submit"
               disabled={!inputMessage.trim()}
-              className="bg-amber-500 disabled:opacity-40 text-slate-950 p-2 rounded-xl font-bold hover:bg-amber-400 transition-colors cursor-pointer"
+              aria-label="Send message"
+              className="shrink-0 bg-amber-500 disabled:opacity-40 text-slate-950 p-2.5 rounded-xl font-bold hover:bg-amber-400 transition-colors cursor-pointer"
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-5 h-5" />
             </button>
           </form>
         </div>

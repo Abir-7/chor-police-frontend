@@ -60,6 +60,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const me = gameState.players.find((p) => p.id === currentUserId);
   const isRaja = myRole === GameRole.RAJA;
   const isPolice = myRole === GameRole.POLICE;
+  const rajaPlayer = gameState.players.find((p) => p.role === GameRole.RAJA);
+  const policePlayer = gameState.players.find((p) => p.role === GameRole.POLICE);
+
+  /** Three bouncing dots that make a 'deciding...' status feel alive. */
+  const DecidingDots = () => (
+    <span className="inline-flex ml-1 gap-0.5 align-baseline">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="inline-block w-1.5 h-1.5 rounded-full bg-current animate-bounce"
+          style={{ animationDelay: `${i * 150}ms` }}
+        />
+      ))}
+    </span>
+  );
 
   // Only trust and display the partner-thief identity while the CURRENT role
   // really is a thief. Without this guard, a partner identity left over from
@@ -152,7 +167,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col px-4 pb-4 pt-20 sm:p-6 max-w-5xl mx-auto">
+    <div className="min-h-screen bg-slate-950 text-white flex flex-col px-4 pb-24 pt-20 sm:p-6 max-w-5xl mx-auto">
       {/* Top Game Bar with Scoreboard Trigger */}
       <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900/90 border border-slate-800 rounded-2xl px-3 py-2.5 sm:px-5 sm:py-3 shadow-lg mb-6">
         <div className="flex items-center gap-2 sm:gap-3">
@@ -300,9 +315,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="w-full max-w-xl p-4 bg-slate-900/60 rounded-2xl border border-slate-800 text-xs text-slate-400 flex items-center justify-center gap-2 mb-6 order-first">
-                <Crown className="w-4 h-4 text-amber-400 animate-bounce" />
-                <span>Waiting for Babu to choose the target thief...</span>
+              <div className="w-full max-w-xl p-4 bg-slate-900/80 border border-amber-500/30 rounded-2xl shadow-lg mb-6 order-first flex items-center justify-center gap-3">
+                <Crown className="w-6 h-6 text-amber-400 animate-bounce shrink-0" />
+                <div className="text-left">
+                  <span className="block text-sm font-black text-amber-400 uppercase tracking-wide">
+                    Babu is deciding
+                    <DecidingDots />
+                  </span>
+                  <span className="block text-xs text-slate-400">
+                    {rajaPlayer ? `${rajaPlayer.name} is choosing whom the Police must catch...` : 'Waiting for the target thief to be chosen...'}
+                  </span>
+                </div>
               </div>
             )}
 
@@ -344,14 +367,29 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               <Shield className="w-4 h-4" />
               Target Selected: Catch The {gameState.targetRole}!
             </div>
-            <h2 className="text-2xl font-black mb-2 text-white">
-              {isPolice ? `Police: Which one is the ${gameState.targetRole}?` : 'Police is Investigating...'}
-            </h2>
-            <p className="text-xs text-slate-400 mb-6">
-              {isPolice
-                ? `Choose between the 2 suspects below to arrest the ${gameState.targetRole}!`
-                : 'Police is deciding between the two suspects...'}
-            </p>
+            {isPolice ? (
+              <>
+                <h2 className="text-2xl font-black mb-2 text-white">
+                  Police: Which one is the {gameState.targetRole}?
+                </h2>
+                <p className="text-xs text-slate-400 mb-6">
+                  Choose between the 2 suspects below to arrest the {gameState.targetRole}!
+                </p>
+              </>
+            ) : (
+              <div className="w-full max-w-xl p-4 mb-6 bg-slate-900/80 border border-blue-500/30 rounded-2xl shadow-lg flex items-center justify-center gap-3">
+                <Shield className="w-6 h-6 text-blue-400 animate-pulse shrink-0" />
+                <div className="text-left">
+                  <span className="block text-sm font-black text-blue-400 uppercase tracking-wide">
+                    Police is investigating
+                    <DecidingDots />
+                  </span>
+                  <span className="block text-xs text-slate-400">
+                    {policePlayer ? `${policePlayer.name} is trying to catch the ${gameState.targetRole}...` : `Someone is trying to catch the ${gameState.targetRole}...`}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Live Indicator of Police Selection for everyone */}
             {selectedSuspectPlayer && (
