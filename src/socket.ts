@@ -28,6 +28,26 @@ export const getSocket = (): Socket => {
     socket.on('disconnect', (reason) => {
       console.log('Disconnected from socket server:', reason);
     });
+
+    // Mobile quirk: locking or switching away can suspend the page, and when
+    // the user comes back socket.io sometimes sleeps on its backoff instead
+    // of dialing again. Nudge it the moment the screen is visible again —
+    // the server holds the seat for 5 minutes so a fast resume keeps the
+    // player in their room (and their live game state) without rejoining.
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && socket && !socket.connected) {
+          socket.connect();
+        }
+      });
+
+      // Coming back online after the phone dropped Wi-Fi/data mid-game.
+      window.addEventListener('online', () => {
+        if (socket && !socket.connected) {
+          socket.connect();
+        }
+      });
+    }
   }
   return socket;
 };
