@@ -4,7 +4,7 @@ import { ChatMessage, ChatReaction } from '../types';
 import { playSound } from '../sound';
 import { Send, MessageSquare, X } from 'lucide-react';
 
-const EMOJIS = ['😂', '😭', '😕', '🤝', '🕵️', '🤫', '😱', '👑', '🔥', '👀', '👍'];
+const EMOJIS = ['😂', '😭', '😕', '🤝', '🕵️', '🤫', '😱', '👑', '🔥', '👀', '👍', '💀', '😎', '🥳', '😤', '👏', '⏳'];
 // Shown in the always-visible quick bar next to the chat button.
 const QUICK_EMOJIS = ['😂', '😭', '😕', '🤝', '😱', '🔥', '👍'];
 
