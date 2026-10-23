@@ -109,6 +109,54 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       (!nonSuspectRoles.has(p.role as GameRole) && p.role !== undefined),
   );
 
+  /**
+   * Orders players for the reveal screen in serial:
+   * 1) current user (me)
+   * 2) Police
+   * 3) Babu (Raja)
+   * 4) suspects (Chor / Dakat)
+   * 5) everyone else
+   */
+  // orderedRevealPlayers helper is defined above the component return
+  const orderedRevealPlayers = (
+    players: GameState['players'],
+    meId: string,
+    myRole: GameRole | undefined,
+    partnerVisible: boolean,
+    trustedPartnerThief: { id: string; name: string; role: GameRole } | undefined,
+  ) => {
+    const suspectRoles = new Set<GameRole>([GameRole.CHOR, GameRole.DAKAT]);
+
+    const sorted = [...players].sort((a, b) => {
+      const aIsMe = a.id === meId;
+      const bIsMe = b.id === meId;
+      if (aIsMe && !bIsMe) return -1;
+      if (!aIsMe && bIsMe) return 1;
+
+      const aRole = a.id === meId && myRole ? myRole : a.role;
+      const bRole = b.id === meId && myRole ? myRole : b.role;
+
+      const aIsPolice = aRole === GameRole.POLICE;
+      const bIsPolice = bRole === GameRole.POLICE;
+      if (aIsPolice && !bIsPolice) return -1;
+      if (!aIsPolice && bIsPolice) return 1;
+
+      const aIsBabu = aRole === GameRole.RAJA;
+      const bIsBabu = bRole === GameRole.RAJA;
+      if (aIsBabu && !bIsBabu) return -1;
+      if (!aIsBabu && bIsBabu) return 1;
+
+      const aIsSuspect = suspectRoles.has(aRole as GameRole);
+      const bIsSuspect = suspectRoles.has(bRole as GameRole);
+      if (aIsSuspect && !bIsSuspect) return -1;
+      if (!aIsSuspect && bIsSuspect) return 1;
+
+      return a.name.localeCompare(b.name);
+    });
+
+    return sorted;
+  };
+
   // Active selection (by Police, synced to all users via gameState or local state)
   const activeSelectionId = isPolice ? selectedSuspectId : (gameState.selectedPlayerId ?? selectedSuspectId);
   const selectedSuspectPlayer = gameState.players.find((p) => p.id === activeSelectionId);
@@ -289,9 +337,37 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         {/* PHASE 2: ROLE REVEAL & ALL PLAYERS' REVEALED ROLES */}
         {gameState.phase === GamePhase.ROLE_REVEAL && (
           <div className="flex flex-col items-center text-center max-w-4xl w-full animate-in fade-in">
-            {/* Babu's Command first — always at the top for Babu and everyone else */}
+            <h2 className="text-2xl font-black mb-1 text-white">Roles Revealed!</h2>
+            <p className="text-xs text-slate-400 mb-6">
+              Cards have opened! Everyone's role is revealed on their card except suspects (<span className="text-purple-300 font-bold">Chor or Dakat</span>).
+            </p>
+
+            {/* Display All Players Cards — serial order: me → police → babu → suspect → others */}
+            <div className="w-full">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-4 text-center">
+                Assigned Roles (Chor and Dakat remain secret suspects)
+              </span>
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                {orderedRevealPlayers(gameState.players, currentUserId, myRole, partnerVisible, trustedPartnerThief).map((p) => {
+                  const isCurrent = p.id === currentUserId;
+                  const isPartner = partnerVisible && trustedPartnerThief.id === p.id;
+                  const displayRole = isCurrent && myRole ? myRole : isPartner ? trustedPartnerThief.role : p.role;
+                  return (
+                    <div key={p.id} className="flex flex-col items-center">
+                      <RoleCard
+                        role={displayRole}
+                        playerName={p.name}
+                        isCurrentUser={isCurrent}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Babu's Command — moved to bottom */}
             {isRaja ? (
-              <div className="w-full max-w-xl bg-slate-900/90 border border-amber-500/40 p-5 rounded-2xl shadow-xl mb-6 order-first">
+              <div className="w-full max-w-xl bg-slate-900/90 border border-amber-500/40 p-5 rounded-2xl shadow-xl mt-6">
                 <div className="flex items-center justify-center gap-2 mb-2 text-amber-400">
                   <Crown className="w-5 h-5" />
                   <span className="font-black text-sm uppercase">Babu's Command</span>
@@ -315,7 +391,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="w-full max-w-xl p-4 bg-slate-900/80 border border-amber-500/30 rounded-2xl shadow-lg mb-6 order-first flex items-center justify-center gap-3">
+              <div className="w-full max-w-xl p-4 bg-slate-900/80 border border-amber-500/30 rounded-2xl shadow-lg mt-6 flex items-center justify-center gap-3">
                 <Crown className="w-6 h-6 text-amber-400 animate-bounce shrink-0" />
                 <div className="text-left">
                   <span className="block text-sm font-black text-amber-400 uppercase tracking-wide">
@@ -328,35 +404,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 </div>
               </div>
             )}
-
-            <h2 className="text-2xl font-black mb-1 text-white">Roles Revealed!</h2>
-            <p className="text-xs text-slate-400 mb-6">
-              Cards have opened! Everyone's role is revealed on their card except suspects (<span className="text-purple-300 font-bold">Chor or Dakat</span>).
-            </p>
-
-            {/* Display All Players Cards */}
-            <div className="w-full">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-4 text-center">
-                Assigned Roles (Chor and Dakat remain secret suspects)
-              </span>
-              <div className="flex flex-wrap items-center justify-center gap-4">
-                {gameState.players.map((p) => {
-                  const isCurrent = p.id === currentUserId;
-                  const isPartner = partnerVisible && trustedPartnerThief.id === p.id;
-                  const displayRole = isCurrent && myRole ? myRole : isPartner ? trustedPartnerThief.role : p.role;
-                  return (
-                    <div key={p.id} className="flex flex-col items-center">
-                      <RoleCard
-                        role={displayRole}
-                        playerName={p.name}
-                        isCurrentUser={isCurrent}
-                        
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         )}
 

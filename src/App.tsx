@@ -25,19 +25,20 @@ const SHUFFLE_MAX_MS = 5000;
 
 // Ticking stops after this many seconds even if the Police never decides —
 // a stalled game must not tick forever.
-const MAX_TICK_SOUND_TICKS = 20;
+const MAX_TICK_SOUND_TICKS = 20;  // How long each phase announcement animation stays on screen before the
+  // underlying screen is revealed (all durations in ms).
+  const ANNOUNCE_MS: Record<
+    'reveal' | 'king' | 'caught' | 'missed',
+    number
+  > = {
+    reveal: 3000,
+    king: 4000,
+    caught: 5000,
+    missed: 5000,
+  };
 
-// How long each phase announcement animation stays on screen before the
-// underlying screen is revealed (all durations in ms).
-const ANNOUNCE_MS: Record<
-  'reveal' | 'king' | 'caught' | 'missed',
-  number
-> = {
-  reveal: 3000,
-  king: 4000,
-  caught: 5000,
-  missed: 5000,
-};
+  // Delay before the reveal animation starts after all players have picked.
+  const REVEAL_DELAY_MS = 1000;
 
 type Announcement = {
   kind: 'reveal' | 'king' | 'caught' | 'missed';
@@ -74,6 +75,7 @@ export const App: React.FC = () => {
   const gameStateRef = useRef<PublicGameState | null>(gameState);
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const announcementRef = useRef<Announcement | null>(null);
+  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Keep refs of the current game state so socket handlers always read fresh data.
   useEffect(() => {
@@ -90,6 +92,13 @@ export const App: React.FC = () => {
     shuffleStartRef.current = null;
     setPendingGameState(null);
     setIsShuffling(false);
+  }, []);
+
+  const cancelRevealDelay = useCallback(() => {
+    if (revealTimerRef.current) {
+      clearTimeout(revealTimerRef.current);
+      revealTimerRef.current = null;
+    }
   }, []);
 
   const triggerShuffle = useCallback((label: string) => {
@@ -277,6 +286,7 @@ export const App: React.FC = () => {
       setTimeLeft(undefined);
       setHasSession(false);
       cancelShuffle();
+      cancelRevealDelay();
       setAnnouncement(null);
       clearSession();
     };
@@ -356,13 +366,16 @@ export const App: React.FC = () => {
     };
 
     const handleGameStateUpdated = (state: PublicGameState) => {
-      // Everyone has picked a paper: play the card-opening reveal animation
-      // before showing the revealed roles.
+      // Everyone has picked a paper: wait 1s, then play the card-opening
+      // reveal animation before showing the revealed roles.
       if (
         gameStateRef.current?.phase === GamePhase.PICKING &&
         state.phase === GamePhase.ROLE_REVEAL
       ) {
-        setAnnouncement({ kind: 'reveal', nextState: state });
+        if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+        revealTimerRef.current = setTimeout(() => {
+          setAnnouncement({ kind: 'reveal', nextState: state });
+        }, REVEAL_DELAY_MS);
         return;
       }
 
@@ -483,6 +496,7 @@ export const App: React.FC = () => {
       setPartnerThief(undefined);
       setTimeLeft(undefined);
       cancelShuffle();
+      cancelRevealDelay();
       setAnnouncement(null);
       setErrorMessage(data.message);
     };
@@ -493,6 +507,7 @@ export const App: React.FC = () => {
       setPartnerThief(undefined);
       setTimeLeft(undefined);
       cancelShuffle();
+      cancelRevealDelay();
       setAnnouncement(null);
     };
 
@@ -502,6 +517,7 @@ export const App: React.FC = () => {
       if (!pendingGameStateRef.current) {
         cancelShuffle();
       }
+      cancelRevealDelay();
       setAnnouncement(null);
     };
 
@@ -651,6 +667,7 @@ export const App: React.FC = () => {
     setHasSession(false);
     setSeatPin('');
     cancelShuffle();
+    cancelRevealDelay();
     setAnnouncement(null);
     localStorage.removeItem('chor_roomCode');
     localStorage.removeItem('chor_token');
