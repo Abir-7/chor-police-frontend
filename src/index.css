@@ -1,5 +1,29 @@
 @import "tailwindcss";
 
+/* Emoji quick bar: same thin, themed horizontal scrollbar on PC as the
+   compact overlay scrollbar phones show, so scrolling feels identical. */
+.emoji-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(245, 158, 11, 0.35) transparent;
+}
+
+.emoji-scrollbar::-webkit-scrollbar {
+  height: 5px;
+}
+
+.emoji-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.emoji-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.35);
+  border-radius: 999px;
+}
+
+.emoji-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.6);
+}
+
 /* Shuffle overlay animations (paper slips riffle through the deck) */
 @keyframes shuffle-through-left {
   0% {
@@ -255,3 +279,66 @@
 .announce-sparkle {
   animation: announce-sparkle 0.9s ease-in-out infinite;
 }
+
+/* Reveal screen: your own card floats gently up and down */
+@keyframes my-card-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+
+.my-card-bob {
+  animation: my-card-bob 2s ease-in-out infinite;
+}
+
+/* Reveal screen: the Police card washes red and blue, like siren light */
+@keyframes police-siren-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 22px 2px rgba(59, 130, 246, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 26px 4px rgba(239, 68, 68, 0.6);
+  }
+}
+
+.police-siren-glow {
+  animation: police-siren-glow 1.6s linear infinite;
+}
+
+/* Reveal screen: the Babu card pulses a bright gold neon glow */
+@keyframes babu-gold-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 16px 2px rgba(245, 158, 11, 0.35);
+    filter: brightness(1);
+  }
+  50% {
+    box-shadow: 0 0 34px 7px rgba(245, 158, 11, 0.8);
+    filter: brightness(1.18);
+  }
+}
+
+.babu-gold-pulse {
+  animation: babu-gold-pulse 2s ease-in-out infinite;
+}
+
+/* Reveal screen: the highlighted "(You)" text glows amber */
+@keyframes you-text-glow {
+  0%,
+  100% {
+    text-shadow: 0 0 5px rgba(251, 191, 36, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 12px rgba(251, 191, 36, 0.95);
+  }
+}
+
+.you-text-glow {
+  animation: you-text-glow 2s ease-in-out infinite;
+}
+

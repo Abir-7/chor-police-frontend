@@ -374,6 +374,7 @@ export const App: React.FC = () => {
       ) {
         if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
         revealTimerRef.current = setTimeout(() => {
+          revealTimerRef.current = null;
           setAnnouncement({ kind: 'reveal', nextState: state });
         }, REVEAL_DELAY_MS);
         return;
@@ -413,6 +414,20 @@ export const App: React.FC = () => {
       phase: GamePhase;
       players: { id: string; name: string; role?: GameRole | 'CHOR_OR_DAKAT' }[];
     }) => {
+      // While the 1s reveal delay or the 3s reveal animation is still running,
+      // this reveal must NOT touch the board: applying it now would make the
+      // next state visible before the animation finishes. When the animation
+      // ends, the announcement applies its own next state, which already
+      // carries the masked roles, so nothing is lost by skipping this.
+      // (A reconnected player with no animation still gets the merge below.)
+      const isRevealPending =
+        revealTimerRef.current !== null ||
+        announcementRef.current?.kind === 'reveal';
+
+      if (isRevealPending) {
+        return;
+      }
+
       // Only merge the reveal into a state that belongs to the current round.
       // Applying it on top of an older state (e.g. the last round's result,
       // which contains real Chor/Dakat roles) would flash stale thief roles

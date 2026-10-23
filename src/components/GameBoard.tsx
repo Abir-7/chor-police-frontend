@@ -352,8 +352,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   const isCurrent = p.id === currentUserId;
                   const isPartner = partnerVisible && trustedPartnerThief.id === p.id;
                   const displayRole = isCurrent && myRole ? myRole : isPartner ? trustedPartnerThief.role : p.role;
+                  // Reveal polish: your own card floats up and down, the
+                  // Police card flashes red/blue siren light, and the Babu
+                  // card pulses a bright gold neon glow.
+                  const revealFx = isCurrent
+                    ? 'my-card-bob'
+                    : displayRole === GameRole.POLICE
+                    ? 'police-siren-glow'
+                    : displayRole === GameRole.RAJA
+                    ? 'babu-gold-pulse'
+                    : '';
                   return (
-                    <div key={p.id} className="flex flex-col items-center">
+                    <div key={p.id} className={`flex flex-col items-center ${revealFx}`}>
                       <RoleCard
                         role={displayRole}
                         playerName={p.name}

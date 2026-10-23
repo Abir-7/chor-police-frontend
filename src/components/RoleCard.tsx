@@ -99,7 +99,7 @@ export const RoleCard: React.FC<RoleCardProps> = ({
 
         <div className="w-full border-t border-purple-500/20 pt-2">
           <span className="text-xs font-bold text-white block truncate">
-            {playerName} {isCurrentUser && '(You)'}
+            {playerName} {isCurrentUser && <span className="text-amber-300 you-text-glow">(You)</span>}
           </span>
         </div>
       </div>
@@ -113,7 +113,13 @@ export const RoleCard: React.FC<RoleCardProps> = ({
       className={`w-36 sm:w-44 md:w-48 h-56 sm:h-60 rounded-2xl p-3 sm:p-4 flex flex-col items-center justify-between shadow-2xl border-2 ${info.color} text-center transition-all`}
     >
       <div className="flex items-center justify-between w-full">
-        <span className="text-[10px] uppercase font-black tracking-widest text-slate-400">
+        <span
+          className={`text-[10px] uppercase font-black tracking-widest ${
+            isCurrentUser
+              ? 'text-amber-300 you-text-glow'
+              : 'text-slate-400'
+          }`}
+        >
           {isCurrentUser ? 'Your Role' : 'Role'}
         </span>
         <span className="text-xs font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
@@ -133,7 +139,7 @@ export const RoleCard: React.FC<RoleCardProps> = ({
 
       <div className="w-full border-t border-slate-700/60 pt-2">
         <span className="text-xs font-bold text-white block truncate">
-          {playerName} {isCurrentUser && '(You)'}
+          {playerName} {isCurrentUser && <span className="text-amber-300 you-text-glow">(You)</span>}
         </span>
       </div>
     </div>

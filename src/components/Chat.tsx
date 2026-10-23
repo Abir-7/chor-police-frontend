@@ -100,8 +100,10 @@ export const Chat: React.FC<ChatProps> = ({ currentUserId }) => {
       {/* Floating Chat Toggle Button */}
       <div className="fixed bottom-4 right-3 sm:bottom-6 sm:right-6 z-40 flex items-center gap-1.5 sm:gap-2 max-w-[calc(100vw-1.5rem)]">
         {/* Quick Reaction Bar — the last emojis hide on tiny screens so the
-            chat button itself never gets pushed out of view. */}
-        <div className="bg-slate-900/95 backdrop-blur-md border border-slate-700 p-1.5 rounded-full shadow-xl flex flex-nowrap items-center gap-0.5 sm:gap-1 min-w-0 max-w-[56vw] sm:max-w-[70vw] overflow-x-auto">
+            chat button itself never gets pushed out of view. On PC the bar is
+            capped at the same narrow width, so it scrolls horizontally just
+            like on phones instead of showing all emojis in one long row. */}
+        <div className="bg-slate-900/95 backdrop-blur-md border border-slate-700 p-1.5 rounded-full shadow-xl flex flex-nowrap items-center gap-0.5 sm:gap-1 min-w-0 max-w-[56vw] sm:max-w-[26rem] overflow-x-auto emoji-scrollbar">
           {EMOJIS.map((emoji) => (
             <button
               key={emoji}
