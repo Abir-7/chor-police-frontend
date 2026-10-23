@@ -268,6 +268,12 @@ export const App: React.FC = () => {
       setHasSession(true);
 
       saveSession(data);
+
+      // Pull-based game resync: the server also pushes the live game state
+      // on reconnect, but that push can lose a race with this page still
+      // registering its handlers after a refresh. Asking again guarantees a
+      // fresh copy (a no-op when no game is running).
+      socket.emit('game:sync');
     };
 
     const handleRoomUpdated = (data: { roomCode: string; players: RoomPlayer[] }) => {
