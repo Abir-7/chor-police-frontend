@@ -119,7 +119,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
    */
   // orderedRevealPlayers helper is defined above the component return
   const orderedRevealPlayers = (
-    players: GameState['players'],
+    players: PublicGameState['players'],
     meId: string,
     myRole: GameRole | undefined,
     partnerVisible: boolean,
@@ -348,7 +348,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 Assigned Roles (Chor and Dakat remain secret suspects)
               </span>
               <div className="flex flex-wrap items-center justify-center gap-4">
-                {orderedRevealPlayers(gameState.players, currentUserId, myRole, partnerVisible, trustedPartnerThief).map((p) => {
+                {orderedRevealPlayers(gameState.players, currentUserId, myRole, !!partnerVisible, trustedPartnerThief).map((p) => {
                   const isCurrent = p.id === currentUserId;
                   const isPartner = partnerVisible && trustedPartnerThief.id === p.id;
                   const displayRole = isCurrent && myRole ? myRole : isPartner ? trustedPartnerThief.role : p.role;
