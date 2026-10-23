@@ -372,6 +372,26 @@ export const App: React.FC = () => {
         gameStateRef.current?.phase === GamePhase.PICKING &&
         state.phase === GamePhase.ROLE_REVEAL
       ) {
+        // Show the final pick right away (who claimed which slip — e.g. the
+        // last bot's name on its paper) while keeping the board in PICKING
+        // until the reveal animation is done. Papers carry no roles, so this
+        // leaks nothing; hasPicked alone is copied for the same reason.
+        setGameState((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            players: prev.players.map((p) => {
+              const updated = state.players.find((np) => np.id === p.id);
+              return updated ? { ...p, hasPicked: updated.hasPicked } : p;
+            }),
+            papers: state.papers,
+          };
+        });
+
+        // The final slip claim never went through the PICKING→PICKING sound
+        // branch above, so play it here for the last picker.
+        playSound('pick');
+
         if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
         revealTimerRef.current = setTimeout(() => {
           revealTimerRef.current = null;

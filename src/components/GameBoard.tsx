@@ -363,7 +363,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     ? 'babu-gold-pulse'
                     : '';
                   return (
-                    <div key={p.id} className={`flex flex-col items-center ${revealFx}`}>
+                    <div
+                      key={p.id}
+                      // rounded-2xl matches the card's corners so glow
+                      // animations render rounded, not as a square halo.
+                      className={`flex flex-col items-center rounded-2xl ${revealFx}`}
+                    >
                       <RoleCard
                         role={displayRole}
                         playerName={p.name}
