@@ -7,7 +7,7 @@ interface RoleCardProps {
   playerName?: string;
   isCurrentUser?: boolean;
   score?: number;
-  /** Spans the whole reveal row (used for solo rows like "your card"). */
+  /** Spans the whole reveal row — rendered as a horizontal row-card. */
   fullWidth?: boolean;
 }
 
@@ -79,37 +79,102 @@ export const RoleCard: React.FC<RoleCardProps> = ({
   isCurrentUser,
   fullWidth,
 }) => {
-  // Full-width solo rows keep the mobile stack clean; on larger screens the
-  // card returns to its normal fixed size so the board stays balanced.
-  const widthClass = fullWidth
-    ? 'w-full max-w-xs sm:w-44 md:w-48 sm:max-w-none'
-    : 'w-32 sm:w-44 md:w-48';
+  // The glowing "(You)" tag, shared by both layouts.
+  const youTag = isCurrentUser && (
+    <span className="text-amber-300 you-text-glow text-[10px] font-black uppercase tracking-wider">
+      (You)
+    </span>
+  );
 
-  // Suspects: Chor or Dakat are masked as Suspect for everyone except the person themself (or revealed at result)
-  if (!role || role === 'CHOR_OR_DAKAT') {
-    return (
-      <div className={`${widthClass} h-52 sm:h-60 rounded-2xl p-2.5 sm:p-4 flex flex-col items-center justify-between shadow-2xl border-2 border-purple-500/70 bg-gradient-to-b from-purple-950/60 via-slate-900 to-slate-950 text-center transition-all`}>
-        <div className="flex items-center justify-between w-full">
-          <span className="text-[10px] uppercase font-black tracking-wider text-purple-400">
-            Suspect
-          </span>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
-            Hidden
-          </span>
-        </div>
-
-        <div className="flex flex-col items-center my-2">
-          <div className="w-14 h-14 rounded-full bg-purple-500/10 border border-purple-500/30 flex items-center justify-center mb-2 text-2xl">
+  // ─── FULL-WIDTH ROW-CARD (solo rows on the reveal page) ──────────────────
+  if (fullWidth) {
+    // Suspect: Chor or Dakat are masked for everyone except themself.
+    if (!role || role === 'CHOR_OR_DAKAT') {
+      return (
+        <div className="w-full max-w-md sm:max-w-lg h-20 sm:h-24 rounded-2xl px-3 sm:px-4 border-2 border-purple-500/70 bg-gradient-to-r from-purple-950/70 via-slate-900 to-slate-950 shadow-2xl flex items-center gap-3 text-left">
+          <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-2xl shrink-0">
             🕵️
           </div>
-          <h3 className="text-base font-black text-white">Suspect</h3>
-          <span className="text-xs text-purple-300 font-semibold mt-0.5">Chor or Dakat</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-black text-white">Suspect</h3>
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                Hidden
+              </span>
+            </div>
+            <span className="text-[11px] text-purple-300 font-semibold block truncate">
+              Chor or Dakat
+            </span>
+          </div>
+          <div className="text-right shrink-0 max-w-[38%]">
+            <span className="text-xs font-bold text-white block truncate">
+              {playerName}
+            </span>
+            {youTag}
+          </div>
         </div>
+      );
+    }
 
-        <div className="w-full border-t border-purple-500/20 pt-2">
-          <span className="text-xs font-bold text-white block truncate">
-            {playerName} {isCurrentUser && <span className="text-amber-300 you-text-glow">(You)</span>}
+    const info = ROLE_INFO[role];
+
+    return (
+      <div
+        className={`w-full max-w-md sm:max-w-lg h-20 sm:h-24 rounded-2xl px-3 sm:px-4 border-2 ${info.color} shadow-2xl flex items-center gap-3 text-left transition-all`}
+      >
+        <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 [&>svg]:w-6 [&>svg]:h-6">
+          {info.icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-base font-black uppercase tracking-wider text-white">
+              {info.name}
+            </h2>
+            <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+              +{info.score} pts
+            </span>
+            {isCurrentUser && (
+              <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-amber-400 text-slate-950">
+                Your Role
+              </span>
+            )}
+          </div>
+          <span className="text-[10px] text-slate-400 leading-tight block truncate">
+            {info.desc}
           </span>
+        </div>
+        <div className="text-right shrink-0 max-w-[38%]">
+          <span className="text-xs font-bold text-white block truncate">
+            {playerName}
+          </span>
+          {youTag}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── HORIZONTAL CARD (all rows on mobile) ──────────────────────────
+  // Full-width solo rows stay single, wide cards; pair rows turn into two
+  // side-by-side horizontal cards. Same shape for suspects or revealed roles.
+  if (!role || role === 'CHOR_OR_DAKAT') {
+    // Suspect: Chor or Dakat are masked as Suspect for everyone except the person themself (or revealed at result)
+    return (
+      <div className="w-full max-w-xs sm:w-full sm:max-w-md md:max-w-2xl h-14 sm:h-16 rounded-2xl px-3 sm:px-4 border-2 border-purple-500/70 bg-gradient-to-r from-purple-950/70 via-slate-900 to-slate-950 shadow-2xl flex items-center gap-3 text-left transition-all">
+        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-lg shrink-0">
+          🕵️
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-black text-white truncate">Suspect</h3>
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+              Hidden
+            </span>
+          </div>
+          <span className="text-[11px] text-purple-300 font-semibold block truncate">Chor or Dakat</span>
+        </div>
+        <div className="text-right shrink-0 max-w-[42%]">
+          <span className="text-xs font-bold text-white block truncate">{playerName}</span>
+          {youTag}
         </div>
       </div>
     );
@@ -117,39 +182,28 @@ export const RoleCard: React.FC<RoleCardProps> = ({
 
   const info = ROLE_INFO[role];
 
+  // Pair-row horizontal card (desktop keeps its original tall vertical card)
   return (
     <div
-      className={`${widthClass} h-52 sm:h-60 rounded-2xl p-2.5 sm:p-4 flex flex-col items-center justify-between shadow-2xl border-2 ${info.color} text-center transition-all`}
+      className={
+        `w-full max-w-[46%] sm:max-w-[22rem] h-16 sm:h-20 md:h-24 rounded-2xl px-3 sm:px-4 border-2 ${info.color} shadow-2xl flex items-center gap-3 text-left transition-all`}
     >
-      <div className="flex items-center justify-between w-full">
-        <span
-          className={`text-[10px] uppercase font-black tracking-widest ${
-            isCurrentUser
-              ? 'text-amber-300 you-text-glow'
-              : 'text-slate-400'
-          }`}
-        >
-          {isCurrentUser ? 'Your Role' : 'Role'}
-        </span>
-        <span className="text-xs font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
-          +{info.score} pts
-        </span>
+      <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 [&>svg]:w-5 [&>svg]:h-5">
+        {info.icon}
       </div>
-
-      <div className="flex flex-col items-center my-1">
-        <div className="mb-1 scale-95">{info.icon}</div>
-        <h2 className="text-lg font-black uppercase tracking-wider text-white">
-          {info.name}
-        </h2>
-        <span className="text-[11px] text-slate-400 leading-tight mt-0.5 px-1">
-          {info.desc}
-        </span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <h2 className="text-sm font-black uppercase tracking-wider text-white truncate">{info.name}</h2>
+          <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">+ {info.score} pts</span>
+          {isCurrentUser && (
+            <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-amber-400 text-slate-950">Your Role</span>
+          )}
+        </div>
+        <span className="text-[10px] text-slate-400 leading-tight block truncate">{info.desc}</span>
       </div>
-
-      <div className="w-full border-t border-slate-700/60 pt-2">
-        <span className="text-xs font-bold text-white block truncate">
-          {playerName} {isCurrentUser && <span className="text-amber-300 you-text-glow">(You)</span>}
-        </span>
+      <div className="text-right shrink-0 max-w-[42%]">
+        <span className="text-xs font-bold text-white block truncate">{playerName}</span>
+        {youTag}
       </div>
     </div>
   );

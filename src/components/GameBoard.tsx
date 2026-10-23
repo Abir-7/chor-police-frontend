@@ -381,16 +381,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         {gameState.phase === GamePhase.ROLE_REVEAL && (
           <div className="flex flex-col items-center text-center max-w-4xl w-full animate-in fade-in">
             <h2 className="text-2xl font-black mb-1 text-white">Roles Revealed!</h2>
-            <p className="text-xs text-slate-400 mb-6">
-              Cards have opened! Everyone's role is revealed on their card except suspects (<span className="text-purple-300 font-bold">Chor or Dakat</span>).
+            <p className="text-xs text-slate-400 mb-4">
+              Suspects (<span className="text-purple-300 font-bold">Chor or Dakat</span>) stay hidden until the arrest.
             </p>
 
             {/* Display All Players Cards — row order: me → babu & police → suspects → others */}
             <div className="w-full">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-4 text-center">
-                Assigned Roles (Chor and Dakat remain secret suspects)
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2.5 text-center">
+                Assigned Roles
               </span>
-              <div className="flex w-full flex-col items-center gap-2.5 sm:gap-4">
+              <div className="flex w-full flex-col items-center gap-2 sm:gap-4">
                 {buildRevealRows(gameState.players, currentUserId).map((row, rowIdx) => (
                   // A solo row spans the whole width (your card, or the card
                   // whose partner is you); pair rows split into two halves.
@@ -399,7 +399,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     className={
                       row.length === 1
                         ? 'flex w-full items-center justify-center'
-                        : 'flex flex-wrap items-center justify-center gap-2.5 sm:gap-4'
+                        : 'flex flex-wrap items-stretch justify-center gap-2 sm:gap-4'
                     }
                   >
                     {row.map((p) => renderRevealCard(p, row.length === 1))}
@@ -410,7 +410,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
             {/* Babu's Command — moved to bottom */}
             {isRaja ? (
-              <div className="w-full max-w-xl bg-slate-900/90 border border-amber-500/40 p-5 rounded-2xl shadow-xl mt-6">
+              <div className="w-full max-w-xl bg-slate-900/90 border border-amber-500/40 p-4 rounded-2xl shadow-xl mt-5">
                 <div className="flex items-center justify-center gap-2 mb-2 text-amber-400">
                   <Crown className="w-5 h-5" />
                   <span className="font-black text-sm uppercase">Babu's Command</span>
@@ -434,7 +434,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="w-full max-w-xl p-4 bg-slate-900/80 border border-amber-500/30 rounded-2xl shadow-lg mt-6 flex items-center justify-center gap-3">
+              <div className="w-full max-w-xl p-4 bg-slate-900/80 border border-amber-500/30 rounded-2xl shadow-lg mt-5 flex items-center justify-center gap-3">
                 <Crown className="w-6 h-6 text-amber-400 animate-bounce shrink-0" />
                 <div className="text-left">
                   <span className="block text-sm font-black text-amber-400 uppercase tracking-wide">
