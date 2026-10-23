@@ -327,6 +327,30 @@
   animation: babu-gold-pulse 2s ease-in-out infinite;
 }
 
+/* Picking screen: a taken slip shakes when clicked instead of alerting */
+@keyframes paper-shake {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  20% {
+    transform: translateX(-7px) rotate(-4deg);
+  }
+  40% {
+    transform: translateX(7px) rotate(4deg);
+  }
+  60% {
+    transform: translateX(-5px) rotate(-3deg);
+  }
+  80% {
+    transform: translateX(5px) rotate(3deg);
+  }
+}
+
+.paper-shake {
+  animation: paper-shake 0.5s ease-in-out;
+}
+
 /* Reveal screen: the highlighted "(You)" text glows amber */
 @keyframes you-text-glow {
   0%,

@@ -47,6 +47,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 }) => {
   const [selectedSuspectId, setSelectedSuspectId] = useState<string | null>(null);
   const [showScoreboard, setShowScoreboard] = useState(false);
+  // The slip currently doing its "already taken" shake (no alert needed).
+  const [shakingPaperId, setShakingPaperId] = useState<string | null>(null);
 
   // The GameBoard component stays mounted between rounds, so without this
   // reset the police's local suspect selection from a finished round would
@@ -167,6 +169,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     if (onPoliceSelectSuspect) {
       onPoliceSelectSuspect(suspectId);
     }
+  };
+
+  // Clicking an unavailable slip just shakes it — no server call and no
+  // error toast, the shake itself says "this one is already taken".
+  const handlePaperClick = (paperId: string, canPick: boolean) => {
+    if (canPick) {
+      onPickPaper(paperId);
+      return;
+    }
+
+    setShakingPaperId(paperId);
+    setTimeout(() => {
+      setShakingPaperId((current) => (current === paperId ? null : current));
+    }, 600);
   };
 
   // Trigger celebration confetti if match is over
@@ -291,9 +307,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 return (
                   <button
                     key={paper.id}
-                    onClick={() => canClick && onPickPaper(paper.id)}
-                    disabled={!canClick}
+                    onClick={() => handlePaperClick(paper.id, canClick)}
                     className={`group relative w-24 h-32 sm:w-28 sm:h-36 rounded-2xl border-2 bg-gradient-to-br ${theme.bg} overflow-hidden transition-all duration-300 shadow-lg flex flex-col items-center justify-center ${tilt} ${
+                      shakingPaperId === paper.id ? 'paper-shake' : ''
+                    } ${
                       isTaken
                         ? 'opacity-70 saturate-50 cursor-not-allowed border-slate-600'
                         : me?.hasPicked

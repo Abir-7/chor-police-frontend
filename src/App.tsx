@@ -547,6 +547,16 @@ export const App: React.FC = () => {
     };
 
     const handleGameError = (data: { message: string }) => {
+      // Paper-claim races are handled on the board itself — the taken slip
+      // shakes instead of alerting, so no toast for these.
+      const msg = data.message?.toLowerCase() ?? '';
+      if (
+        msg.includes('already been selected') ||
+        msg.includes('already picked')
+      ) {
+        return;
+      }
+
       setErrorMessage(data.message);
       // No new round is coming anymore: let the player regain control.
       if (!pendingGameStateRef.current) {
