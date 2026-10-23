@@ -7,6 +7,8 @@ interface RoleCardProps {
   playerName?: string;
   isCurrentUser?: boolean;
   score?: number;
+  /** Spans the whole reveal row (used for solo rows like "your card"). */
+  fullWidth?: boolean;
 }
 
 export const ROLE_INFO: Record<
@@ -75,11 +77,18 @@ export const RoleCard: React.FC<RoleCardProps> = ({
   role,
   playerName,
   isCurrentUser,
+  fullWidth,
 }) => {
+  // Full-width solo rows keep the mobile stack clean; on larger screens the
+  // card returns to its normal fixed size so the board stays balanced.
+  const widthClass = fullWidth
+    ? 'w-full max-w-xs sm:w-44 md:w-48 sm:max-w-none'
+    : 'w-32 sm:w-44 md:w-48';
+
   // Suspects: Chor or Dakat are masked as Suspect for everyone except the person themself (or revealed at result)
   if (!role || role === 'CHOR_OR_DAKAT') {
     return (
-      <div className="w-32 sm:w-44 md:w-48 h-52 sm:h-60 rounded-2xl p-2.5 sm:p-4 flex flex-col items-center justify-between shadow-2xl border-2 border-purple-500/70 bg-gradient-to-b from-purple-950/60 via-slate-900 to-slate-950 text-center transition-all">
+      <div className={`${widthClass} h-52 sm:h-60 rounded-2xl p-2.5 sm:p-4 flex flex-col items-center justify-between shadow-2xl border-2 border-purple-500/70 bg-gradient-to-b from-purple-950/60 via-slate-900 to-slate-950 text-center transition-all`}>
         <div className="flex items-center justify-between w-full">
           <span className="text-[10px] uppercase font-black tracking-wider text-purple-400">
             Suspect
@@ -110,7 +119,7 @@ export const RoleCard: React.FC<RoleCardProps> = ({
 
   return (
     <div
-      className={`w-32 sm:w-44 md:w-48 h-52 sm:h-60 rounded-2xl p-2.5 sm:p-4 flex flex-col items-center justify-between shadow-2xl border-2 ${info.color} text-center transition-all`}
+      className={`${widthClass} h-52 sm:h-60 rounded-2xl p-2.5 sm:p-4 flex flex-col items-center justify-between shadow-2xl border-2 ${info.color} text-center transition-all`}
     >
       <div className="flex items-center justify-between w-full">
         <span

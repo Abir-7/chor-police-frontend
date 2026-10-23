@@ -112,11 +112,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   );
 
   /**
-   * Groups players into reveal rows (top to bottom, one row each on mobile):
-   * row 1: me (always first, whatever my role is)
-   * row 2: Police, then Babu (the one I hold drops out of this row)
-   * row 3: the two suspects (Chor / Dakat, still masked)
-   * last rows: everyone else
+   * Groups players into reveal rows (top to bottom):
+   * row 1: me — full width, whatever my role is
+   * row 2: Police + Babu side by side (the one I hold is alone, full width)
+   * row 3: the two suspects side by side (if I am one, my partner is alone,
+   *        full width)
+   * last rows: the remaining players, two per row (a leftover card gets its
+   * own full-width row)
    */
   const buildRevealRows = (
     players: PublicGameState['players'],
@@ -140,25 +142,31 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       (p) => !authorityIds.has(p.id) && !suspectIds.has(p.id),
     );
 
-    return [meRow, [...police, ...babu], suspects, others].filter(
+    // Others sit two per row; a leftover card lands on a full-width row.
+    const otherRows: PublicGameState['players'][] = [];
+    for (let i = 0; i < others.length; i += 2) {
+      otherRows.push(others.slice(i, i + 2));
+    }
+
+    return [meRow, [...police, ...babu], suspects, ...otherRows].filter(
       (row) => row.length > 0,
     );
   };
 
   /** Renders one revealed card with its row-safe polish effects. */
-  const renderRevealCard = (p: PublicGameState['players'][number]) => {
+  const renderRevealCard = (
+    p: PublicGameState['players'][number],
+    fullWidth: boolean,
+  ) => {
     const isCurrent = p.id === currentUserId;
     const isPartner = partnerVisible && trustedPartnerThief.id === p.id;
     const displayRole = isCurrent && myRole ? myRole : isPartner ? trustedPartnerThief.role : p.role;
     // Reveal polish: your own card floats up and down, the
     // Police card flashes red/blue siren light, and the Babu
     // card pulses a bright gold neon glow.
-    const revealFx = isCurrent
-      ? 'my-card-bob'
-      : displayRole === GameRole.POLICE
-      ? 'police-siren-glow'
-      : displayRole === GameRole.RAJA
-      ? 'babu-gold-pulse'
+    const revealFx = isCurrent      ? 'my-card-bob'
+      : displayRole === GameRole.POLICE      ? 'police-siren-glow'
+      : displayRole === GameRole.RAJA      ? 'babu-gold-pulse'
       : '';
     return (
       <div
@@ -171,6 +179,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           role={displayRole}
           playerName={p.name}
           isCurrentUser={isCurrent}
+          fullWidth={fullWidth}
         />
       </div>
     );
@@ -381,10 +390,19 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-4 text-center">
                 Assigned Roles (Chor and Dakat remain secret suspects)
               </span>
-              <div className="flex flex-col items-center gap-2.5 sm:gap-4">
+              <div className="flex w-full flex-col items-center gap-2.5 sm:gap-4">
                 {buildRevealRows(gameState.players, currentUserId).map((row, rowIdx) => (
-                  <div key={rowIdx} className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-4">
-                    {row.map((p) => renderRevealCard(p))}
+                  // A solo row spans the whole width (your card, or the card
+                  // whose partner is you); pair rows split into two halves.
+                  <div
+                    key={rowIdx}
+                    className={
+                      row.length === 1
+                        ? 'flex w-full items-center justify-center'
+                        : 'flex flex-wrap items-center justify-center gap-2.5 sm:gap-4'
+                    }
+                  >
+                    {row.map((p) => renderRevealCard(p, row.length === 1))}
                   </div>
                 ))}
               </div>
