@@ -79,7 +79,7 @@ export const RoleCard: React.FC<RoleCardProps> = ({
   // Suspects: Chor or Dakat are masked as Suspect for everyone except the person themself (or revealed at result)
   if (!role || role === 'CHOR_OR_DAKAT') {
     return (
-      <div className="w-36 sm:w-44 md:w-48 h-56 sm:h-60 rounded-2xl p-3 sm:p-4 flex flex-col items-center justify-between shadow-2xl border-2 border-purple-500/70 bg-gradient-to-b from-purple-950/60 via-slate-900 to-slate-950 text-center transition-all">
+      <div className="w-32 sm:w-44 md:w-48 h-52 sm:h-60 rounded-2xl p-2.5 sm:p-4 flex flex-col items-center justify-between shadow-2xl border-2 border-purple-500/70 bg-gradient-to-b from-purple-950/60 via-slate-900 to-slate-950 text-center transition-all">
         <div className="flex items-center justify-between w-full">
           <span className="text-[10px] uppercase font-black tracking-wider text-purple-400">
             Suspect
@@ -110,7 +110,7 @@ export const RoleCard: React.FC<RoleCardProps> = ({
 
   return (
     <div
-      className={`w-36 sm:w-44 md:w-48 h-56 sm:h-60 rounded-2xl p-3 sm:p-4 flex flex-col items-center justify-between shadow-2xl border-2 ${info.color} text-center transition-all`}
+      className={`w-32 sm:w-44 md:w-48 h-52 sm:h-60 rounded-2xl p-2.5 sm:p-4 flex flex-col items-center justify-between shadow-2xl border-2 ${info.color} text-center transition-all`}
     >
       <div className="flex items-center justify-between w-full">
         <span

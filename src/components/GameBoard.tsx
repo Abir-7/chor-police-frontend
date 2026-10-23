@@ -381,9 +381,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-4 text-center">
                 Assigned Roles (Chor and Dakat remain secret suspects)
               </span>
-              <div className="flex flex-col items-center gap-4">
+              <div className="flex flex-col items-center gap-2.5 sm:gap-4">
                 {buildRevealRows(gameState.players, currentUserId).map((row, rowIdx) => (
-                  <div key={rowIdx} className="flex flex-wrap items-center justify-center gap-4">
+                  <div key={rowIdx} className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-4">
                     {row.map((p) => renderRevealCard(p))}
                   </div>
                 ))}
