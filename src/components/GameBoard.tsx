@@ -112,51 +112,68 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   );
 
   /**
-   * Orders players for the reveal screen in serial:
-   * 1) current user (me)
-   * 2) Police
-   * 3) Babu (Raja)
-   * 4) suspects (Chor / Dakat)
-   * 5) everyone else
+   * Groups players into reveal rows (top to bottom, one row each on mobile):
+   * row 1: me (always first, whatever my role is)
+   * row 2: Police, then Babu (the one I hold drops out of this row)
+   * row 3: the two suspects (Chor / Dakat, still masked)
+   * last rows: everyone else
    */
-  // orderedRevealPlayers helper is defined above the component return
-  const orderedRevealPlayers = (
+  const buildRevealRows = (
     players: PublicGameState['players'],
     meId: string,
-    myRole: GameRole | undefined,
-    partnerVisible: boolean,
-    trustedPartnerThief: { id: string; name: string; role: GameRole } | undefined,
   ) => {
-    const suspectRoles = new Set<GameRole>([GameRole.CHOR, GameRole.DAKAT]);
+    const meRow = players.filter((p) => p.id === meId);
+    const rest = players.filter((p) => p.id !== meId);
 
-    const sorted = [...players].sort((a, b) => {
-      const aIsMe = a.id === meId;
-      const bIsMe = b.id === meId;
-      if (aIsMe && !bIsMe) return -1;
-      if (!aIsMe && bIsMe) return 1;
+    const babu = rest.filter((p) => p.role === GameRole.RAJA);
+    const police = rest.filter((p) => p.role === GameRole.POLICE);
+    const suspects = rest.filter(
+      (p) =>
+        p.role === 'CHOR_OR_DAKAT' ||
+        p.role === GameRole.CHOR ||
+        p.role === GameRole.DAKAT,
+    );
 
-      const aRole = a.id === meId && myRole ? myRole : a.role;
-      const bRole = b.id === meId && myRole ? myRole : b.role;
+    const authorityIds = new Set([...babu, ...police].map((p) => p.id));
+    const suspectIds = new Set(suspects.map((p) => p.id));
+    const others = rest.filter(
+      (p) => !authorityIds.has(p.id) && !suspectIds.has(p.id),
+    );
 
-      const aIsPolice = aRole === GameRole.POLICE;
-      const bIsPolice = bRole === GameRole.POLICE;
-      if (aIsPolice && !bIsPolice) return -1;
-      if (!aIsPolice && bIsPolice) return 1;
+    return [meRow, [...police, ...babu], suspects, others].filter(
+      (row) => row.length > 0,
+    );
+  };
 
-      const aIsBabu = aRole === GameRole.RAJA;
-      const bIsBabu = bRole === GameRole.RAJA;
-      if (aIsBabu && !bIsBabu) return -1;
-      if (!aIsBabu && bIsBabu) return 1;
-
-      const aIsSuspect = suspectRoles.has(aRole as GameRole);
-      const bIsSuspect = suspectRoles.has(bRole as GameRole);
-      if (aIsSuspect && !bIsSuspect) return -1;
-      if (!aIsSuspect && bIsSuspect) return 1;
-
-      return a.name.localeCompare(b.name);
-    });
-
-    return sorted;
+  /** Renders one revealed card with its row-safe polish effects. */
+  const renderRevealCard = (p: PublicGameState['players'][number]) => {
+    const isCurrent = p.id === currentUserId;
+    const isPartner = partnerVisible && trustedPartnerThief.id === p.id;
+    const displayRole = isCurrent && myRole ? myRole : isPartner ? trustedPartnerThief.role : p.role;
+    // Reveal polish: your own card floats up and down, the
+    // Police card flashes red/blue siren light, and the Babu
+    // card pulses a bright gold neon glow.
+    const revealFx = isCurrent
+      ? 'my-card-bob'
+      : displayRole === GameRole.POLICE
+      ? 'police-siren-glow'
+      : displayRole === GameRole.RAJA
+      ? 'babu-gold-pulse'
+      : '';
+    return (
+      <div
+        key={p.id}
+        // rounded-2xl matches the card's corners so glow
+        // animations render rounded, not as a square halo.
+        className={`flex flex-col items-center rounded-2xl ${revealFx}`}
+      >
+        <RoleCard
+          role={displayRole}
+          playerName={p.name}
+          isCurrentUser={isCurrent}
+        />
+      </div>
+    );
   };
 
   // Active selection (by Police, synced to all users via gameState or local state)
@@ -359,41 +376,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               Cards have opened! Everyone's role is revealed on their card except suspects (<span className="text-purple-300 font-bold">Chor or Dakat</span>).
             </p>
 
-            {/* Display All Players Cards — serial order: me → police → babu → suspect → others */}
+            {/* Display All Players Cards — row order: me → babu & police → suspects → others */}
             <div className="w-full">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-4 text-center">
                 Assigned Roles (Chor and Dakat remain secret suspects)
               </span>
-              <div className="flex flex-wrap items-center justify-center gap-4">
-                {orderedRevealPlayers(gameState.players, currentUserId, myRole, !!partnerVisible, trustedPartnerThief).map((p) => {
-                  const isCurrent = p.id === currentUserId;
-                  const isPartner = partnerVisible && trustedPartnerThief.id === p.id;
-                  const displayRole = isCurrent && myRole ? myRole : isPartner ? trustedPartnerThief.role : p.role;
-                  // Reveal polish: your own card floats up and down, the
-                  // Police card flashes red/blue siren light, and the Babu
-                  // card pulses a bright gold neon glow.
-                  const revealFx = isCurrent
-                    ? 'my-card-bob'
-                    : displayRole === GameRole.POLICE
-                    ? 'police-siren-glow'
-                    : displayRole === GameRole.RAJA
-                    ? 'babu-gold-pulse'
-                    : '';
-                  return (
-                    <div
-                      key={p.id}
-                      // rounded-2xl matches the card's corners so glow
-                      // animations render rounded, not as a square halo.
-                      className={`flex flex-col items-center rounded-2xl ${revealFx}`}
-                    >
-                      <RoleCard
-                        role={displayRole}
-                        playerName={p.name}
-                        isCurrentUser={isCurrent}
-                      />
-                    </div>
-                  );
-                })}
+              <div className="flex flex-col items-center gap-4">
+                {buildRevealRows(gameState.players, currentUserId).map((row, rowIdx) => (
+                  <div key={rowIdx} className="flex flex-wrap items-center justify-center gap-4">
+                    {row.map((p) => renderRevealCard(p))}
+                  </div>
+                ))}
               </div>
             </div>
 
