@@ -217,9 +217,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     return (
       <div
         key={p.id}
-        className={`flex min-w-0 flex-col items-center gap-1.5 rounded-2xl px-2.5 py-2.5 text-center ring-1 sm:gap-2 sm:py-3 ${accent} ${fx}`}
+        className={`flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-2xl px-2.5 py-2.5 text-center ring-1 ${accent} ${fx}`}
       >
-        <Identicon name={p.name} className="h-10 w-10 shrink-0 sm:h-12 sm:w-12" />
+        <Identicon name={p.name} className="h-10 w-10 shrink-0 sm:h-11 sm:w-11" />
         <span className="block w-full truncate text-sm font-black leading-tight text-white">
           {p.name}
         </span>
@@ -769,7 +769,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               </div>
 
               {/* Two columns */}
-              <div className="grid min-h-0 w-full max-w-5xl flex-1 grid-cols-[minmax(300px,0.9fr)_1.1fr] gap-6 overflow-hidden">
+              <div className="grid min-h-0 w-full max-w-5xl flex-1 grid-cols-[minmax(300px,0.9fr)_1.1fr] gap-6 overflow-hidden p-1.5">
                 {/* Left: your role + command */}
                 <div className="flex min-h-0 flex-col gap-4">
                   <span className="shrink-0 text-[10px] font-black uppercase tracking-[0.3em] text-amber-400/80">
@@ -802,7 +802,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                       {gameState.players.length} players
                     </span>
                   </span>
-                  <div className="grid min-h-0 flex-1 auto-rows-min grid-cols-2 content-start gap-4 overflow-y-auto p-7 -m-5">
+                  <div className="grid min-h-0 flex-1 auto-rows-min grid-cols-2 content-start gap-3 overflow-y-auto p-6 -m-5">
                     {buildRevealRows(gameState.players, currentUserId)
                       .filter((p) => p.id !== currentUserId)
                       .map((p) => renderRevealRow(p))}
