@@ -82,3 +82,11 @@ export interface ChatReaction {
   reaction: string;
   timestamp: string;
 }
+
+/** A human whose seat is held open while the round is frozen. */
+export interface DisconnectedPlayer {
+  id: string;
+  name: string;
+  /** Milliseconds until the seat is released (server-relative). */
+  remainingMs: number | null;
+}

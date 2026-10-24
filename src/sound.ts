@@ -20,6 +20,72 @@ export type SoundEffect =
   | 'pop'
   | 'tick';
 
+/** Cues generated with WebAudio, so they need no downloaded asset. */
+export type SynthEffect = 'disconnect' | 'reconnect';
+
+const SYNTH_NOTES: Record<
+  SynthEffect,
+  { freq: number; at: number; dur: number }[]
+> = {
+  // Falling three-note "bwoop": someone dropped out.
+  disconnect: [
+    { freq: 520, at: 0, dur: 0.16 },
+    { freq: 392, at: 0.18, dur: 0.16 },
+    { freq: 262, at: 0.36, dur: 0.3 },
+  ],
+  // Rising chime: they are back.
+  reconnect: [
+    { freq: 392, at: 0, dur: 0.12 },
+    { freq: 523, at: 0.13, dur: 0.12 },
+    { freq: 784, at: 0.26, dur: 0.26 },
+  ],
+};
+
+let audioContext: AudioContext | null = null;
+
+function playSynth(effect: SynthEffect): void {
+  try {
+    const Ctor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+
+    if (!Ctor) {
+      return;
+    }
+
+    audioContext ??= new Ctor();
+    const ctx = audioContext;
+
+    // Browsers suspend the context until a user gesture; this is best effort.
+    if (ctx.state === 'suspended') {
+      void ctx.resume().catch(() => undefined);
+    }
+
+    const start = ctx.currentTime + 0.02;
+
+    for (const note of SYNTH_NOTES[effect]) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.value = note.freq;
+
+      const t0 = start + note.at;
+
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.35, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + note.dur);
+
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + note.dur + 0.05);
+    }
+  } catch {
+    // Audio unavailable — sound is optional.
+  }
+}
+
 const SFX_SOURCES: Record<SoundEffect, string> = {
   pick: '/sfx/pick.mp3', // paper slip claimed
   reveal: '/sfx/reveal.mp3', // role reveal screen
@@ -71,8 +137,13 @@ try {
   // Audio API unavailable — fall back to lazy creation inside playSound.
 }
 
-export function playSound(effect: SoundEffect): void {
+export function playSound(effect: SoundEffect | SynthEffect): void {
   if (!enabled) {
+    return;
+  }
+
+  if (effect === 'disconnect' || effect === 'reconnect') {
+    playSynth(effect);
     return;
   }
 

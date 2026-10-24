@@ -4,6 +4,29 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
 let socket: Socket | null = null;
 
+/**
+ * A phone that was locked or lost signal can keep a socket that LOOKS
+ * connected but is dead until the next heartbeat fails. Ping with an ack
+ * timeout: if the server never answers, tear the socket down and redial now.
+ */
+export const probeConnection = (): void => {
+  if (!socket) return;
+
+  if (!socket.connected) {
+    socket.connect();
+    return;
+  }
+
+  const live = socket;
+
+  live.timeout(4000).emit('app:ping', (err: unknown) => {
+    if (err) {
+      live.disconnect();
+      live.connect();
+    }
+  });
+};
+
 export const getSocket = (): Socket => {
   if (!socket) {
     socket = io(BACKEND_URL, {
@@ -36,16 +59,21 @@ export const getSocket = (): Socket => {
     // player in their room (and their live game state) without rejoining.
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' && socket && !socket.connected) {
-          socket.connect();
+        if (document.visibilityState === 'visible') {
+          probeConnection();
+        }
+      });
+
+      // Restored from the back/forward cache (iOS Safari): sockets are dead.
+      window.addEventListener('pageshow', (event) => {
+        if ((event as PageTransitionEvent).persisted) {
+          probeConnection();
         }
       });
 
       // Coming back online after the phone dropped Wi-Fi/data mid-game.
       window.addEventListener('online', () => {
-        if (socket && !socket.connected) {
-          socket.connect();
-        }
+        probeConnection();
       });
     }
   }

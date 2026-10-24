@@ -6,6 +6,7 @@ import {
   PublicGameState,
   RoomPlayer,
   GameSettings,
+  DisconnectedPlayer,
 } from './types';
 import { LobbyScreen } from './components/LobbyScreen';
 import { WaitingRoom } from './components/WaitingRoom';
@@ -14,6 +15,7 @@ import { Chat } from './components/Chat';
 import { ShuffleOverlay } from './components/ShuffleOverlay';
 import { PhaseAnnouncementOverlay } from './components/PhaseAnnouncementOverlay';
 import { SoundToggle } from './components/SoundToggle';
+import { ConnectionOverlay, WaitingPlayer } from './components/ConnectionOverlay';
 import { playSound } from './sound';
 
 
@@ -81,6 +83,44 @@ export const App: React.FC = () => {
   const announcementRef = useRef<Announcement | null>(null);
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // --- Connection resilience state -------------------------------------
+  // A saved seat means a refresh should rejoin instead of flashing the lobby.
+  const [restoring, setRestoring] = useState(() => {
+    try {
+      return Boolean(
+        localStorage.getItem('chor_roomCode') &&
+          localStorage.getItem('chor_token'),
+      );
+    } catch {
+      return false;
+    }
+  });
+  const [socketOnline, setSocketOnline] = useState(() => getSocket().connected);
+  // Humans the round is frozen for (null = nobody is missing).
+  const [paused, setPaused] = useState<WaitingPlayer[] | null>(null);
+  // This seat was taken over by another tab/device.
+  const [replaced, setReplaced] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  // Socket handlers are registered once, so they read live values from refs.
+  const inRoomRef = useRef(false);
+  const currentUserIdRef = useRef('');
+  const replacedRef = useRef(false);
+  const reconnectPendingRef = useRef(false);
+  const pausedNamesRef = useRef<Map<string, string>>(new Map());
+  const hiddenAtRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    inRoomRef.current = inRoom;
+    currentUserIdRef.current = currentUserId;
+    replacedRef.current = replaced;
+  }, [inRoom, currentUserId, replaced]);
+
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(null), 3500);
+    return () => clearTimeout(timer);
+  }, [notice]);
+
   // Keep refs of the current game state so socket handlers always read fresh data.
   useEffect(() => {
     gameStateRef.current = gameState;
@@ -144,6 +184,7 @@ export const App: React.FC = () => {
     if (savedRoomCode && savedToken) {
       setLoading(true);
       setErrorMessage(null);
+      reconnectPendingRef.current = true;
       const socket = getSocket();
       socket.emit('room:reconnect', {
         roomCode: savedRoomCode,
@@ -161,6 +202,7 @@ export const App: React.FC = () => {
   ) => {
     setLoading(true);
     setErrorMessage(null);
+    reconnectPendingRef.current = true;
     getSocket().emit('room:reclaim', {
       roomCode: roomCodeValue,
       playerName,
@@ -196,12 +238,66 @@ export const App: React.FC = () => {
       localStorage.removeItem('chor_seatPin');
     };
 
+    // Applies the server's list of absent humans. Shows who the round waits
+    // for, and plays the drop / return cues for everyone else at the table.
+    const applyPaused = (list: DisconnectedPlayer[], quiet = false) => {
+      const others = list.filter((p) => p.id !== currentUserIdRef.current);
+      const previous = pausedNamesRef.current;
+      const next = new Map(others.map((p) => [p.id, p.name] as const));
+
+      const droppedNow = others.filter((p) => !previous.has(p.id));
+      const returned = [...previous.entries()].filter(([id]) => !next.has(id));
+
+      pausedNamesRef.current = next;
+
+      if (others.length === 0) {
+        setPaused(null);
+      } else {
+        const t = Date.now();
+        setPaused(
+          others.map((p) => ({
+            id: p.id,
+            name: p.name,
+            deadlineAt: p.remainingMs == null ? null : t + p.remainingMs,
+          })),
+        );
+      }
+
+      if (quiet) return;
+
+      if (droppedNow.length > 0) {
+        playSound('disconnect');
+      } else if (returned.length > 0) {
+        playSound('reconnect');
+        setNotice(
+          others.length === 0
+            ? 'Everyone is back — game on!'
+            : `${returned.map(([, name]) => name).join(', ')} is back`,
+        );
+      }
+    };
+
+    const handleDisconnect = () => {
+      setSocketOnline(false);
+      // The server only holds the seat while we are away: remember that the
+      // next successful reconnect is a return, not a fresh join.
+      if (inRoomRef.current) {
+        playSound('disconnect');
+      }
+    };
+
     const handleConnect = () => {
+      setSocketOnline(true);
+
+      // Another tab owns this seat: do not fight it for the seat.
+      if (replacedRef.current) return;
+
       // Auto-reconnect if we have a session saved
       const savedRoomCode = localStorage.getItem('chor_roomCode');
       const savedToken = localStorage.getItem('chor_token');
 
       if (savedRoomCode && savedToken) {
+        reconnectPendingRef.current = true;
         socket.emit('room:reconnect', {
           roomCode: savedRoomCode,
           reconnectToken: savedToken,
@@ -215,6 +311,7 @@ export const App: React.FC = () => {
     }
 
     socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
 
     // Room Events
     const handleRoomCreated = (data: {
@@ -262,6 +359,12 @@ export const App: React.FC = () => {
       seatPin?: string;
       players: RoomPlayer[];
     }) => {
+      reconnectPendingRef.current = false;
+      setRestoring(false);
+      setReplaced(false);
+      replacedRef.current = false;
+      setNotice('Reconnected — welcome back!');
+      playSound('reconnect');
       setInRoom(true);
       setRoomCode(data.roomCode);
       setCurrentUserId(data.player.id);
@@ -282,7 +385,7 @@ export const App: React.FC = () => {
 
     const handleRoomUpdated = (data: { roomCode: string; players: RoomPlayer[] }) => {
       setPlayers(data.players);
-      const me = data.players.find((p) => p.id === currentUserId);
+      const me = data.players.find((p) => p.id === currentUserIdRef.current);
       if (me) {
         setIsHost(me.isHost);
       }
@@ -298,6 +401,12 @@ export const App: React.FC = () => {
       cancelShuffle();
       cancelRevealDelay();
       setAnnouncement(null);
+      setPoliceAutoConfirm(false);
+      setRestoring(false);
+      setReplaced(false);
+      replacedRef.current = false;
+      pausedNamesRef.current = new Map();
+      setPaused(null);
       clearSession();
     };
 
@@ -319,24 +428,93 @@ export const App: React.FC = () => {
     };
 
     const handleRoomError = (data: { message: string }) => {
-      if (inRoom && data.message?.toLowerCase().includes('already in a room')) {
+      const message = data.message ?? '';
+      const lower = message.toLowerCase();
+
+      if (inRoomRef.current && lower.includes('already in a room')) {
         return;
       }
-      setErrorMessage(data.message);
+
       setLoading(false);
 
-      // If reconnect token is invalid/expired, wipe it so the lobby offers a
-      // fresh join instead of a reconnect that can never succeed.
-      if (
-        data.message?.toLowerCase().includes('token') ||
-        data.message?.toLowerCase().includes('not found')
-      ) {
-        setHasSession(false);
-        clearSession();
+      // A failed reconnect/reclaim means this seat can never be restored
+      // (room closed, server restarted, token revoked, seat released): drop
+      // the dead session and, if a board is on screen, leave it.
+      if (reconnectPendingRef.current) {
+        reconnectPendingRef.current = false;
+        setRestoring(false);
+
+        if (
+          /token|not found|expired|does not belong|no longer/.test(lower)
+        ) {
+          const wasInRoom = inRoomRef.current;
+
+          if (wasInRoom) {
+            resetToLobby();
+          } else {
+            setHasSession(false);
+            clearSession();
+          }
+
+          setErrorMessage(
+            wasInRoom ? 'That room is no longer available.' : message,
+          );
+          return;
+        }
       }
+
+      setErrorMessage(message);
+    };
+
+    // Same seat opened elsewhere: this tab becomes read-only until reclaimed.
+    const handleRoomReplaced = () => {
+      replacedRef.current = true;
+      setReplaced(true);
+      setLoading(false);
     };
 
     // Game Events
+
+    // One atomic snapshot after a refresh / reconnect: replaces the whole
+    // game view and skips every animation so the player lands on the live
+    // screen instead of replaying stale reveals.
+    const handleGameResync = (data: {
+      gameState: PublicGameState | null;
+      myRole?: GameRole;
+      partnerThief?: { id: string; name: string; role: GameRole };
+      disconnected?: DisconnectedPlayer[];
+    }) => {
+      cancelShuffle();
+      cancelRevealDelay();
+      setAnnouncement(null);
+      setPoliceAutoConfirm(false);
+      setTimeLeft(undefined);
+
+      if (!data.gameState) {
+        if (gameStateRef.current) {
+          setNotice('The game ended while you were away.');
+        }
+        setGameState(null);
+        setMyRole(undefined);
+        setPartnerThief(undefined);
+        applyPaused([], true);
+        return;
+      }
+
+      setGameState(data.gameState);
+      setMyRole(data.myRole);
+      setPartnerThief(data.partnerThief);
+      applyPaused(data.disconnected ?? [], true);
+    };
+
+    const handleGamePaused = (data: { disconnected: DisconnectedPlayer[] }) => {
+      applyPaused(data.disconnected ?? []);
+    };
+
+    const handleGameResumed = () => {
+      applyPaused([]);
+    };
+
     const handleGameStarted = (state: PublicGameState) => {
       const prev = gameStateRef.current;
 
@@ -540,6 +718,8 @@ export const App: React.FC = () => {
     };
 
     const handleGameAborted = (data: { message: string }) => {
+      applyPaused([], true);
+      setPoliceAutoConfirm(false);
       setGameState(null);
       setMyRole(undefined);
       setPartnerThief(undefined);
@@ -551,6 +731,7 @@ export const App: React.FC = () => {
     };
 
     const handleBackToLobbyEvent = () => {
+      applyPaused([], true);
       setGameState(null);
       setMyRole(undefined);
       setPartnerThief(undefined);
@@ -588,7 +769,11 @@ export const App: React.FC = () => {
     socket.on('room:kicked', handleKicked);
     socket.on('room:player-removed', handlePlayerRemoved);
     socket.on('room:error', handleRoomError);
+    socket.on('room:replaced', handleRoomReplaced);
 
+    socket.on('game:resync', handleGameResync);
+    socket.on('game:paused', handleGamePaused);
+    socket.on('game:resumed', handleGameResumed);
     socket.on('game:started', handleGameStarted);
     socket.on('game:state-updated', handleGameStateUpdated);
     socket.on('game:my-role', handleMyRole);
@@ -604,6 +789,11 @@ export const App: React.FC = () => {
 
     return () => {
       socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('room:replaced', handleRoomReplaced);
+      socket.off('game:resync', handleGameResync);
+      socket.off('game:paused', handleGamePaused);
+      socket.off('game:resumed', handleGameResumed);
       socket.off('room:created', handleRoomCreated);
       socket.off('room:joined', handleRoomJoined);
       socket.off('room:reconnected', handleRoomReconnected);
@@ -625,15 +815,50 @@ export const App: React.FC = () => {
       socket.off('game:aborted', handleGameAborted);
       socket.off('game:back-to-lobby', handleBackToLobbyEvent);
     };
-  }, [currentUserId]);
+    // Handlers read live values through refs, so they register exactly once.
+    // (Re-registering on every currentUserId change used to re-send
+    // room:reconnect from inside a live room.)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  // Back from a locked screen / other tab: timers were throttled and events
+  // may have been missed, so pull a fresh snapshot of the live game.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        hiddenAtRef.current = Date.now();
+        return;
+      }
+
+      const hiddenFor = hiddenAtRef.current
+        ? Date.now() - hiddenAtRef.current
+        : 0;
+      hiddenAtRef.current = null;
+
+      const socket = getSocket();
+
+      if (
+        hiddenFor > 5000 &&
+        socket.connected &&
+        inRoomRef.current &&
+        !replacedRef.current
+      ) {
+        socket.emit('game:sync');
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+
+  const isFrozen = !socketOnline || paused !== null || replaced;
   const gamePhase = gameState?.phase;
 
   // Soft ticking while the Police is deciding whom to arrest. The interval
   // restarts only when the phase itself changes (not on suspect-selection
   // state updates), and stops as soon as the arrest or a new phase lands.
   useEffect(() => {
-    if (gamePhase !== GamePhase.GUESSING) return;
+    if (gamePhase !== GamePhase.GUESSING || isFrozen) return;
 
     let ticks = 0;
 
@@ -648,7 +873,7 @@ export const App: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [gamePhase]);
+  }, [gamePhase, isFrozen]);
 
   // Turn timer countdown effect
   useEffect(() => {
@@ -775,6 +1000,19 @@ export const App: React.FC = () => {
     getSocket().emit('game:back-to-lobby');
   };
 
+  // The replaced tab claims its seat back (the other tab then gets replaced).
+  const handleTakeOver = () => {
+    replacedRef.current = false;
+    setReplaced(false);
+    triggerReconnect();
+  };
+
+  const handleCancelRestore = () => {
+    setRestoring(false);
+    setLoading(false);
+    reconnectPendingRef.current = false;
+  };
+
   return (
     <div className="relative h-dvh overflow-hidden sm:min-h-screen sm:h-auto sm:overflow-auto bg-black font-sans antialiased text-slate-100 selection:bg-amber-500 selection:text-black">
       {/* Toast Alert */}
@@ -790,8 +1028,16 @@ export const App: React.FC = () => {
         </div>
       )}
 
+      {notice && (
+        <div className="fixed top-[calc(1rem+env(safe-area-inset-top))] left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-2xl">
+          {notice}
+        </div>
+      )}
+
       {/* Main Views */}
-      {!inRoom ? (
+      {!inRoom && restoring ? (
+        <div className="h-dvh bg-black" />
+      ) : !inRoom ? (
         <LobbyScreen
           onCreateRoom={handleCreateRoom}
           onJoinRoom={handleJoinRoom}
@@ -844,6 +1090,24 @@ export const App: React.FC = () => {
 
       {/* Global sound effects mute/unmute toggle */}
       <SoundToggle />
+
+      {/* Blocks the board whenever play cannot safely continue. Priority:
+          seat taken over > this device offline > rejoining > waiting for
+          another player to come back. */}
+      {replaced ? (
+        <ConnectionOverlay mode="replaced" onTakeOver={handleTakeOver} />
+      ) : !socketOnline ? (
+        <ConnectionOverlay mode="offline" wasInGame={Boolean(gameState)} />
+      ) : !inRoom && restoring ? (
+        <ConnectionOverlay mode="restoring" onCancel={handleCancelRestore} />
+      ) : paused ? (
+        <ConnectionOverlay
+          mode="paused"
+          waitingFor={paused}
+          isHost={isHost}
+          onRemovePlayer={handleKickPlayer}
+        />
+      ) : null}
 
       {/* Shuffle transition between rounds / starting a match */}
       <ShuffleOverlay isVisible={isShuffling} label={shuffleLabel} />

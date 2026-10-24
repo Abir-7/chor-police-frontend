@@ -237,6 +237,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           )}
           <span className="truncate">{info ? info.name : 'Suspect'}</span>
         </span>
+        {/* Points for every open slip; masked suspects show none. */}
+        {info && (
+          <span className="rounded-full bg-amber-400/15 px-2 py-0.5 font-mono text-[11px] font-black text-amber-300 ring-1 ring-amber-400/30">
+            +{info.score} pts
+          </span>
+        )}
       </div>
     );
   };
