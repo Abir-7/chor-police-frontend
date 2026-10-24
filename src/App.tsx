@@ -74,6 +74,10 @@ export const App: React.FC = () => {
   const shuffleStartRef = useRef<number | null>(null);
   const gameStateRef = useRef<PublicGameState | null>(gameState);
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
+  // True while a bot Police's pick is on screen: non-Police players then see
+  // the Confirm-arrest dock render and visually "press" before the arrest
+  // resolves, exactly like watching a real player hit the button.
+  const [policeAutoConfirm, setPoliceAutoConfirm] = useState(false);
   const announcementRef = useRef<Announcement | null>(null);
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -479,7 +483,8 @@ export const App: React.FC = () => {
       });
     };
 
-    const handlePoliceSelecting = (data: { selectedPlayerId?: string }) => {
+    const handlePoliceSelecting = (data: { selectedPlayerId?: string; autoConfirm?: boolean }) => {
+      setPoliceAutoConfirm(Boolean(data.autoConfirm));
       setGameState((prev) => {
         if (!prev) return prev;
         return {
@@ -495,6 +500,7 @@ export const App: React.FC = () => {
     }) => {
       // Everyone sees "Babu has spoken — Catch the X!" before the
       // guessing screen appears.
+      setPoliceAutoConfirm(false);
       setAnnouncement({
         kind: 'king',
         targetRole: data.targetRole,
@@ -503,6 +509,8 @@ export const App: React.FC = () => {
     };
 
     const announceRoundOutcome = (result: PublicGameState) => {
+      // The arrest resolved: remove the simulated Confirm-press.
+      setPoliceAutoConfirm(false);
       setTimeLeft(undefined);
 
       // Caught or missed: the arrested player's role must match the target.
@@ -768,10 +776,10 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-black font-sans antialiased text-slate-100 selection:bg-amber-500 selection:text-black">
+    <div className="relative h-dvh overflow-hidden sm:min-h-screen sm:h-auto sm:overflow-auto bg-black font-sans antialiased text-slate-100 selection:bg-amber-500 selection:text-black">
       {/* Toast Alert */}
       {errorMessage && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-600 text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2">
+        <div className="fixed top-[calc(1rem+env(safe-area-inset-top))] left-1/2 -translate-x-1/2 z-50 bg-red-600 text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2">
           <span>{errorMessage}</span>
           <button
             onClick={() => setErrorMessage(null)}
@@ -824,11 +832,15 @@ export const App: React.FC = () => {
           onNextRound={handleNextRound}
           onBackToLobby={handleBackToLobby}
           onLeaveGame={handleLeaveRoom}
+          policePressing={policeAutoConfirm}
         />
       )}
 
-      {/* Floating Chat / Emote Component */}
-      {inRoom && <Chat currentUserId={currentUserId} />}
+      {/* Floating Chat / Emote Component — shown only OUTSIDE a running
+          match (i.e. in the waiting room). While the game board is up, chat
+          lives in the desktop sidebar or the mobile drawer instead, so it is
+          never rendered twice on one screen. */}
+      {inRoom && !gameState && <Chat currentUserId={currentUserId} />}
 
       {/* Global sound effects mute/unmute toggle */}
       <SoundToggle />

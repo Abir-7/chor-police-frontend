@@ -1,5 +1,26 @@
 @import "tailwindcss";
 
+/* Mobile: the page itself never scrolls. Screens are sized with h-dvh
+   and any overflow is handled inside their own panels. Desktop (sm+)
+   keeps the normal scrollable page so tall content isn't clipped. */
+@media (max-width: 639.98px) {
+  html,
+  body {
+    height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+}
+
+html,
+body {
+  height: 100%;
+}
+
+#root {
+  height: 100%;
+}
+
 /* Emoji quick bar: same thin, themed horizontal scrollbar on PC as the
    compact overlay scrollbar phones show, so scrolling feels identical. */
 .emoji-scrollbar {
@@ -325,6 +346,34 @@
 
 .babu-gold-pulse {
   animation: babu-gold-pulse 2s ease-in-out infinite;
+}
+
+/* Guessing screen: while a bot Police's pick is live, non-Police players see
+   the Confirm-arrest dock "pressed" by an invisible hand. The 3.2s duration
+   matches the backend's POLICE_ARREST_BEAT_MS, so the press lands right as
+   the round result arrives. */
+@keyframes police-confirm-press {
+  0%,
+  68% {
+    transform: scale(1);
+  }
+  76% {
+    transform: scale(0.93);
+  }
+  82% {
+    transform: scale(1.04);
+  }
+  88% {
+    transform: scale(0.96);
+  }
+  92%,
+  100% {
+    transform: scale(1);
+  }
+}
+
+.police-confirm-press {
+  animation: police-confirm-press 3.2s ease-in-out both;
 }
 
 /* Picking screen: a taken slip shakes when clicked instead of alerting */

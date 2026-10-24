@@ -40,45 +40,52 @@ export const ScoreboardModal: React.FC<ScoreboardModalProps> = ({
   const sorted = [...players].sort((a, b) => b.score - a.score);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-      <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-md animate-in fade-in sm:items-center sm:p-4">
+      <div className="flex max-h-[88dvh] w-full flex-col rounded-t-3xl bg-[#0b0b11] shadow-2xl animate-in slide-in-from-bottom-6 sm:max-h-[85vh] sm:max-w-2xl sm:rounded-3xl sm:slide-in-from-bottom-2 ring-1 ring-white/10">
+        {/* Sheet grabber (mobile) */}
+        <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-white/15 sm:hidden" />
+
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-          <div className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-amber-400" />
+        <div className="flex shrink-0 items-center justify-between px-4 pb-3 pt-3 sm:border-b sm:border-white/[0.06] sm:pt-4">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-400/15 ring-1 ring-amber-400/30">
+              <Trophy className="h-4 w-4 text-amber-400" />
+            </div>
             <div>
-              <h3 className="text-lg font-black text-white">Live Leaderboard</h3>
-              <p className="text-xs text-slate-400">
-                Round-by-round points (Round {roundNumber})
+              <h3 className="text-base font-black tracking-tight text-white">
+                Leaderboard
+              </h3>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">
+                Round {roundNumber} · point by point
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-white/[0.05] text-zinc-400 ring-1 ring-white/10 transition-colors hover:bg-white/[0.1] hover:text-white"
+            aria-label="Close"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Round-by-round table */}
-        <div className="py-3 sm:py-4 max-h-[60vh] overflow-auto">
-          <table className="w-full text-sm border-separate border-spacing-0">
+        <div className="min-h-0 flex-1 overflow-auto px-4 py-3">
+          <table className="w-full border-separate border-spacing-0 text-sm">
             <thead>
               <tr>
-                <th className="sticky top-0 bg-slate-900 px-2 py-2 text-left text-[10px] uppercase font-black tracking-widest text-slate-400 z-10 min-w-[6rem] sm:min-w-[9rem] border-b border-slate-800">
+                <th className="sticky top-0 z-10 min-w-[6rem] border-b border-white/[0.08] bg-[#0b0b11] px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.18em] text-zinc-500">
                   Player
                 </th>
-                {rounds.map((round, i) => (
+                {rounds.map((round) => (
                   <th
                     key={round.roundNumber}
-                    className="sticky top-0 bg-slate-900 px-2 py-2 text-center text-[10px] uppercase font-black tracking-widest text-slate-400 border-b border-slate-800"
+                    className="sticky top-0 z-10 border-b border-white/[0.08] bg-[#0b0b11] px-2 py-2 text-center font-mono text-[10px] font-black tracking-widest text-zinc-500"
                   >
                     R{round.roundNumber}
                   </th>
                 ))}
-
-                <th className="sticky top-0 bg-amber-500/10 border-b border-amber-500/40 px-2 py-2 text-center text-[10px] uppercase font-black tracking-widest text-amber-400">
+                <th className="sticky top-0 z-10 border-b border-amber-400/30 bg-[#141009] px-2 py-2 text-center text-[9px] font-black uppercase tracking-[0.18em] text-amber-400">
                   Total
                 </th>
               </tr>
@@ -90,27 +97,27 @@ export const ScoreboardModal: React.FC<ScoreboardModalProps> = ({
                 return (
                   <tr
                     key={p.id}
-                    className={isLeader ? 'bg-amber-500/5' : isMe ? 'bg-slate-800/40' : undefined}
+                    className={isLeader ? 'bg-amber-400/[0.04]' : isMe ? 'bg-white/[0.03]' : undefined}
                   >
-                    <td className="px-2 py-2.5 border-b border-slate-800/60">
+                    <td className="border-b border-white/[0.05] px-2 py-2.5">
                       <div className="flex items-center gap-2">
                         <span
                           className={`w-5 text-right font-mono text-xs font-bold ${
-                            isLeader ? 'text-amber-400' : 'text-slate-500'
+                            isLeader ? 'text-amber-400' : 'text-zinc-600'
                           }`}
                         >
                           {idx + 1}
                         </span>
                         <div className="text-left leading-tight">
                           <span
-                            className={`font-bold text-xs block whitespace-nowrap ${
-                              isLeader ? 'text-amber-200' : isMe ? 'text-white' : 'text-slate-300'
+                            className={`block whitespace-nowrap text-xs font-bold ${
+                              isLeader ? 'text-amber-200' : isMe ? 'text-white' : 'text-zinc-300'
                             }`}
                           >
                             {p.name} {isMe && '(You)'}
                           </span>
                           {p.role && p.role !== 'CHOR_OR_DAKAT' && (
-                            <span className="text-[10px] font-medium block whitespace-nowrap">
+                            <span className="block whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-600">
                               {ROLE_INFO[p.role as GameRole]?.name}
                             </span>
                           )}
@@ -123,15 +130,15 @@ export const ScoreboardModal: React.FC<ScoreboardModalProps> = ({
                       return (
                         <td
                           key={round.roundNumber}
-                          className="relative px-2 py-2.5 text-center border-b border-slate-800/60"
+                          className="relative border-b border-white/[0.05] px-2 py-2.5 text-center"
                         >
                           <span
                             className={`font-mono text-xs font-bold ${
                               isBest
                                 ? 'text-amber-300'
                                 : p.roundScore !== undefined && pts === undefined
-                                ? 'text-slate-600'
-                                : 'text-slate-300'
+                                ? 'text-zinc-700'
+                                : 'text-zinc-300'
                             }`}
                           >
                             {isBest ? '★' : ''}
@@ -140,11 +147,10 @@ export const ScoreboardModal: React.FC<ScoreboardModalProps> = ({
                         </td>
                       );
                     })}
-
-                    <td className="px-2 py-2.5 text-center border-b border-slate-800/60 bg-amber-500/5">
+                    <td className="border-b border-white/[0.05] bg-amber-400/[0.04] px-2 py-2.5 text-center">
                       <span
                         className={`font-mono text-sm font-black ${
-                          isLeader ? 'text-amber-400' : isMe ? 'text-white' : 'text-slate-100'
+                          isLeader ? 'text-amber-400' : isMe ? 'text-white' : 'text-zinc-100'
                         }`}
                       >
                         {p.score}
@@ -157,18 +163,21 @@ export const ScoreboardModal: React.FC<ScoreboardModalProps> = ({
           </table>
 
           {rounds.length === 0 && (
-            <p className="text-center text-[11px] text-slate-500 pt-2">
+            <p className="pt-3 pb-2 text-center text-[11px] text-zinc-600">
               No finished rounds yet — points will appear here round by round.
             </p>
           )}
         </div>
 
-        <button
-          onClick={onClose}
-          className="w-full mt-2 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-colors cursor-pointer"
-        >
-          Close
-        </button>
+        {/* Footer */}
+        <div className="shrink-0 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+          <button
+            onClick={onClose}
+            className="h-12 w-full cursor-pointer rounded-2xl bg-white/[0.06] text-sm font-bold text-zinc-200 ring-1 ring-white/10 transition-colors hover:bg-white/[0.1]"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
   );

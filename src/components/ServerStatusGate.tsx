@@ -94,7 +94,7 @@ export const ServerStatusGate: React.FC<ServerStatusGateProps> = ({
   const activeRoleInfo = ROLE_INFO[activeRole];
 
   return (
-    <div className="min-h-screen bg-radial from-slate-900 via-slate-950 to-black flex items-center justify-center p-4 font-sans antialiased text-slate-100 select-none">
+    <div className="h-dvh overflow-hidden sm:min-h-screen sm:h-auto sm:overflow-auto bg-radial from-slate-900 via-slate-950 to-black flex items-center justify-center p-4 font-sans antialiased text-slate-100 select-none">
       <div className="w-full max-w-sm text-center">
         {/* Role cards dealt one by one while the server boots.
             Re-keyed so the flip animation replays on every new role. */}

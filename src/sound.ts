@@ -56,6 +56,21 @@ try {
 /** One Audio element per effect kept warm so playback starts instantly. */
 const audioTemplates = new Map<SoundEffect, HTMLAudioElement>();
 
+// Eagerly create + load EVERY effect at startup. Creating an Audio lazily
+// (on first play) makes the very first catch/miss/reveal land late — the
+// browser fetches the file over the network exactly when the drama happens.
+// Preloading means clones come straight from the HTTP cache: zero delay.
+try {
+  (Object.keys(SFX_SOURCES) as SoundEffect[]).forEach((effect) => {
+    const element = new Audio(SFX_SOURCES[effect]);
+    element.preload = 'auto';
+    element.load();
+    audioTemplates.set(effect, element);
+  });
+} catch {
+  // Audio API unavailable — fall back to lazy creation inside playSound.
+}
+
 export function playSound(effect: SoundEffect): void {
   if (!enabled) {
     return;
