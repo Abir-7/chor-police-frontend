@@ -350,7 +350,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           </span>
         ) : me?.hasPicked ? (
           <span className="absolute inset-x-2 bottom-1.5 rounded-lg bg-black/25 py-1 text-[10px] font-black uppercase tracking-widest text-white/80">
-            Taken
+            Open
           </span>
         ) : (
           <span className="absolute inset-x-2 bottom-1.5 rounded-lg bg-black/30 py-1 text-[10px] font-black uppercase tracking-widest text-white/80 opacity-0 transition-opacity group-hover:opacity-100">
