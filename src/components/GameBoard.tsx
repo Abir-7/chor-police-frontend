@@ -51,7 +51,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   onSelectTarget,
   onGuessPlayer,
   onPoliceSelectSuspect,
-  policePressing = false,
   onFinishGame,
   onNextRound,
   onBackToLobby,
@@ -166,7 +165,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const isPartner = partnerVisible && trustedPartnerThief.id === p.id;
     const displayRole = isCurrent && myRole ? myRole : isPartner ? trustedPartnerThief.role : p.role;
     const revealFx = isCurrent
-      ? 'my-card-bob'
+      ? ''
       : displayRole === GameRole.POLICE
       ? 'police-siren-glow'
       : displayRole === GameRole.RAJA
@@ -184,9 +183,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     );
   };
 
-  // Desktop-only reveal row for OTHER players: identicon-first, name-first,
-  // role chip on the right. The mobile compact RoleCard is too sparse for
-  // the wide desktop table, so the table gets its own richer markup.
+  // Reveal tile for OTHER players (phone + desktop): avatar on top, name
+  // centred and truncated, role chip underneath. Tiles sit in a grid so a
+  // long name can never crush the role label, whatever the screen width.
   const renderRevealRow = (p: PublicGameState['players'][number]) => {
     const isCurrent = p.id === currentUserId;
     const isPartner = partnerVisible && trustedPartnerThief.id === p.id;
@@ -218,27 +217,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     return (
       <div
         key={p.id}
-        className={`flex w-full items-center gap-3.5 rounded-2xl px-4 py-3 ring-1 ${accent} ${fx}`}
+        className={`flex min-w-0 flex-col items-center gap-1.5 rounded-2xl px-2.5 py-2.5 text-center ring-1 sm:gap-2 sm:py-3 ${accent} ${fx}`}
       >
-        <Identicon name={p.name} className="h-11 w-11 shrink-0" />
-        <div className="min-w-0 flex-1 leading-tight">
-          <span className="block truncate text-sm font-black text-white">
-            {p.name}
-            {isCurrent && (
-              <span className="ml-1.5 text-[9px] font-black uppercase tracking-[0.18em] text-amber-300">
-                You
-              </span>
-            )}
-          </span>
-          <span className={`mt-0.5 block truncate text-[10px] font-bold uppercase tracking-[0.14em] ${roleText}`}>
-            {info
-              ? info.desc
-              : 'Suspect · hidden until the arrest'}
-          </span>
-        </div>
-        {/* Role chip */}
+        <Identicon name={p.name} className="h-10 w-10 shrink-0 sm:h-12 sm:w-12" />
+        <span className="block w-full truncate text-sm font-black leading-tight text-white">
+          {p.name}
+        </span>
         <span
-          className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-black uppercase tracking-wider ring-1 ${
+          className={`flex max-w-full items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-wider ring-1 ${
             info
               ? `bg-white/[0.05] ring-white/10 ${roleText}`
               : 'bg-purple-500/15 text-purple-200 ring-purple-400/30'
@@ -249,7 +235,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           ) : (
             <span className="text-sm leading-none">🕵️</span>
           )}
-          {info ? info.name : 'Hidden'}
+          <span className="truncate">{info ? info.name : 'Suspect'}</span>
         </span>
       </div>
     );
@@ -492,19 +478,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       >
         Confirm arrest · {gameState.targetRole}
       </button>
-    ) : selectedSuspectPlayer ? (
-      // A pick is live (bot Police or a human Police's choice): the whole
-      // room now sees the same Confirm-arrest dock the Police sees. With a
-      // bot pick it plays a visible press right as the arrest resolves.
-      <button
-        disabled
-        aria-live="polite"
-        className={`flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-blue-400 to-blue-600 text-sm font-black uppercase tracking-[0.12em] text-white shadow-[0_10px_30px_-8px_rgba(59,130,246,0.55)] transition-all md:h-16 md:text-base ${
-          policePressing ? 'police-confirm-press' : 'opacity-90'
-        }`}
-      >
-        Confirm arrest · {gameState.targetRole}
-      </button>
     ) : (
       <div className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-white/[0.04] text-[11px] font-bold text-zinc-400 ring-1 ring-white/10">
         <Shield className="h-4 w-4 animate-pulse text-blue-400" />
@@ -652,7 +625,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       </header>
 
       {/* ─── Phase content ───────────────────────────────────────────────── */}
-      <main className="relative z-10 flex min-h-0 flex-1 flex-col">
+      <main className="relative z-10 flex min-h-0 flex-1 flex-col lg:pr-[22rem]">
         {/* ══ PHASE 1: PICKING ═══════════════════════════════════════════ */}
         {gameState.phase === GamePhase.PICKING && (
           <>
@@ -713,7 +686,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 </p>
               </div>
               <div className="flex min-h-0 flex-1 items-center justify-center px-10 pb-2">
-                <div className="flex flex-wrap items-center justify-center gap-4">
+                <div
+                  className="flex flex-wrap items-center justify-center gap-4"
+                  style={{
+                    maxWidth: (() => {
+                      const total = gameState.papers.length;
+                      const perRow = total > 4 ? Math.ceil(total / 2) : total;
+                      return perRow * 160 + (perRow - 1) * 16;
+                    })(),
+                  }}
+                >
                   {gameState.papers.map((paper, idx) => renderSlip(paper, idx, 'desktop'))}
                 </div>
               </div>
@@ -748,16 +730,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   .filter((p) => p.id === currentUserId)
                   .map((p) => renderRevealCard(p, true))}
               </div>
-              <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-4">
-                <span className="mb-2 block text-[9px] font-black uppercase tracking-[0.3em] text-zinc-600">
+              <div className="min-h-0 flex-1 overflow-y-auto px-1 pt-3">
+                <span className="mb-1 block px-3 text-[9px] font-black uppercase tracking-[0.3em] text-zinc-600">
                   The table
                 </span>
-                <div className="space-y-2 pb-2">
+                <div className="grid grid-cols-2 gap-3 p-4 pb-4">
                   {buildRevealRows(gameState.players, currentUserId)
                     .filter((p) => p.id !== currentUserId)
-                    .map((p) => (
-                      <div key={p.id}>{renderRevealCard(p, false)}</div>
-                    ))}
+                    .map((p) => renderRevealRow(p))}
                 </div>
               </div>
               <div className="shrink-0 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
@@ -816,7 +796,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                       {gameState.players.length} players
                     </span>
                   </span>
-                  <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto pr-2">
+                  <div className="grid min-h-0 flex-1 auto-rows-min grid-cols-2 content-start gap-4 overflow-y-auto p-7 -m-5">
                     {buildRevealRows(gameState.players, currentUserId)
                       .filter((p) => p.id !== currentUserId)
                       .map((p) => renderRevealRow(p))}
@@ -955,7 +935,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     : 'Round completed!'}
                 </h1>
                 {gameState.winnerPlayerId && (
-                  <p className="mt-1 text-xs font-bold text-amber-300">
+                  <p className="mt-1 break-words px-2 text-xs font-bold text-amber-300">
                     {gameState.players.find((p) => p.id === gameState.winnerPlayerId)?.name} took the round 👑
                   </p>
                 )}
@@ -970,7 +950,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   return (
                     <div className="mx-auto mt-2.5 flex w-[92%] items-center justify-center gap-2 rounded-2xl bg-blue-500/10 px-3 py-2 ring-1 ring-blue-500/30">
                       <span className="shrink-0 text-base">🎯</span>
-                      <span className="truncate text-[11px] font-bold text-blue-200">
+                      <span className="text-center text-[11px] font-bold leading-snug text-blue-200">
                         {police?.name ?? 'Police'} arrested{' '}
                         <span className="font-black text-white">{arrested.name}</span>
                         {' · '}
@@ -1112,7 +1092,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               <div className="flex min-h-0 flex-1 items-center justify-center">
                 {(() => {
                   const rankedTop = [...gameState.players].sort((a, b) => b.score - a.score).slice(0, 3);
-                  const heights = ['h-40', 'h-28', 'h-32'];
+                  const heights = ['h-40', 'h-32', 'h-24'];
                   const order = [1, 0, 2];
                   return (
                     <div className="flex items-end gap-4">
@@ -1123,7 +1103,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                         const isMe = p.id === currentUserId;
                         const medal = rankIdx === 0 ? '🥇' : rankIdx === 1 ? '🥈' : '🥉';
                         return (
-                          <div key={p.id} className="flex flex-col items-center gap-2">
+                          <div key={p.id} className="flex flex-col items-center gap-1">
                             <div
                               className={`flex flex-col items-center gap-1.5 rounded-2xl px-5 py-3 ring-1 ${
                                 isWinner

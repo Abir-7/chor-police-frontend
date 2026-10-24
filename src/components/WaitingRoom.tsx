@@ -76,7 +76,7 @@ const Seat: React.FC<{
         onClick={onKick}
         title="Free this seat"
         aria-label="Free this seat"
-        className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-rose-500/10 text-rose-400 ring-1 ring-rose-500/30 transition-colors hover:bg-rose-500/25"
+        className="absolute -right-1.5 -top-1.5 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-[#1a0f24] text-rose-400 ring-1 ring-rose-500/40 transition-colors hover:bg-rose-500/25"
       >
         <UserX className="h-3.5 w-3.5" />
       </button>
@@ -166,7 +166,7 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({
           </span>
         )}
       </div>
-      <div className={`grid gap-2 ${players.length > 4 ? 'grid-cols-2 md:grid-cols-3 md:gap-2.5' : 'grid-cols-2'}`}>
+      <div className="grid grid-cols-2 gap-2 md:gap-2.5">
         {players.map((p) => (
           <Seat
             key={p.id}
@@ -328,7 +328,7 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({
       {/* ══════════ MOBILE: single-column app shell ══════════ */}
       <div className="relative z-10 flex h-dvh flex-col md:hidden">
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-          <div className="mx-auto w-full max-w-md flex-1 px-4 pb-4 pt-[calc(2.75rem+env(safe-area-inset-top))]">
+          <div className="mx-auto w-full max-w-md flex-1 px-4 pb-4 pt-[calc(4.25rem+env(safe-area-inset-top))]">
             {codeCard}
             {pinChip && <div className="mt-2.5">{pinChip}</div>}
             <div className="mt-5">{seatsBlock}</div>

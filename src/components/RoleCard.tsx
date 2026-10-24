@@ -116,9 +116,12 @@ export const RoleCard: React.FC<RoleCardProps> = ({
             <p className="mt-0.5 text-xs font-semibold text-purple-300/80">
               You are Chor or Dakat — stay low.
             </p>
+            <p className="mt-1 truncate text-sm font-bold text-white sm:hidden">
+              {playerName} {youTag}
+            </p>
           </div>
-          <div className="shrink-0 text-right">
-            <span className="block text-sm font-bold text-white">
+          <div className="hidden min-w-0 max-w-[40%] text-right sm:block">
+            <span className="block truncate text-sm font-bold text-white">
               {playerName}
             </span>
             {youTag}
@@ -143,18 +146,16 @@ export const RoleCard: React.FC<RoleCardProps> = ({
             <span className="shrink-0 rounded-full bg-amber-400/15 px-2 py-0.5 font-mono text-[10px] font-black text-amber-300 ring-1 ring-amber-400/30">
               +{info.score}
             </span>
-            {isCurrentUser && (
-              <span className="shrink-0 rounded-full bg-amber-400 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-zinc-950">
-                You
-              </span>
-            )}
           </div>
           <p className="mt-0.5 truncate text-xs font-semibold text-zinc-400">
             {info.desc}
           </p>
+          <p className="mt-1 truncate text-sm font-bold text-white sm:hidden">
+            {playerName} {youTag}
+          </p>
         </div>
-        <div className="shrink-0 text-right">
-          <span className="block text-sm font-bold text-white">
+        <div className="hidden min-w-0 max-w-[40%] text-right sm:block">
+          <span className="block truncate text-sm font-bold text-white">
             {playerName}
           </span>
           {youTag}
@@ -183,7 +184,7 @@ export const RoleCard: React.FC<RoleCardProps> = ({
             Chor or Dakat
           </span>
         </div>
-        <div className="shrink-0 text-right">
+        <div className="min-w-0 max-w-[42%] text-right">
           <span className="block truncate text-xs font-bold text-zinc-200">
             {playerName}
           </span>
@@ -218,7 +219,7 @@ export const RoleCard: React.FC<RoleCardProps> = ({
           {info.desc}
         </span>
       </div>
-      <div className="shrink-0 text-right">
+      <div className="min-w-0 max-w-[42%] text-right">
         <span className="block truncate text-xs font-bold text-zinc-200">
           {playerName}
         </span>

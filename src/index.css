@@ -301,21 +301,6 @@ body {
   animation: announce-sparkle 0.9s ease-in-out infinite;
 }
 
-/* Reveal screen: your own card floats gently up and down */
-@keyframes my-card-bob {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-9px);
-  }
-}
-
-.my-card-bob {
-  animation: my-card-bob 2s ease-in-out infinite;
-}
-
 /* Reveal screen: the Police card washes red and blue, like siren light */
 @keyframes police-siren-glow {
   0%,
