@@ -1,6 +1,30 @@
 import { io, Socket } from 'socket.io-client';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+/**
+ * Which game server to talk to, first match wins:
+ *  1. `?server=https://…` in the page URL (the mobile app uses this to pick
+ *     "Play online" while the page itself is served from the phone),
+ *  2. build-time VITE_BACKEND_URL (`same-origin` = the server that served
+ *     this page, used for the offline phone host / single-server setups),
+ *  3. localhost for development.
+ */
+const resolveBackendUrl = (): string => {
+  const fromQuery = new URLSearchParams(window.location.search).get('server');
+
+  if (fromQuery) {
+    return fromQuery.replace(/\/+$/, '');
+  }
+
+  const fromEnv = import.meta.env.VITE_BACKEND_URL;
+
+  if (fromEnv === 'same-origin') {
+    return window.location.origin;
+  }
+
+  return fromEnv || 'http://localhost:3000';
+};
+
+const BACKEND_URL = resolveBackendUrl();
 
 let socket: Socket | null = null;
 
