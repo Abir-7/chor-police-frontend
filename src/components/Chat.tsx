@@ -101,7 +101,12 @@ export const Chat: React.FC<ChatProps> = ({ currentUserId, inline = false }) => 
     };
 
     const handleReaction = (reaction: ChatReaction) => {
-      // Quick blip for every floating emoji (own or someone else's).
+      // The server broadcasts to the whole room, sender included. Our own
+      // tap was already shown instantly by sendReaction's optimistic echo,
+      // so ignore the server copy or the emoji appears twice ("You" + name).
+      if (reaction.senderId === currentUserId) return;
+
+      // Quick blip for every other player's floating emoji.
       playSound('pop');
 
       const id = Math.random().toString();
